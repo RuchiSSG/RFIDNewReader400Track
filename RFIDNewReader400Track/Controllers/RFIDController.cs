@@ -301,9 +301,11 @@ namespace RFIDReaderPortal.Controllers
         [HttpPost]
         public async Task<IActionResult> Stop()
         {
+            // Stop the listener so no new data comes in
+            _tcpListenerService.Stop();
             await _tcpListenerService.InsertStoredRfidDataAsync(); // Call method to insert data
 
-            return Json(new { success = true, message = "RFID data inserted successfully." });
+            return Json(new { success = true, message = "RFID listener stopped and data inserted successfully." });
         }
 
         public async Task<IActionResult> Reader()

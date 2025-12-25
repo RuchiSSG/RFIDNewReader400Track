@@ -36,6 +36,7 @@ namespace RFIDReaderPortal.Services
         private const int MAX_DATA_COUNT = 1000;
         private const int BUFFER_SIZE = 16384; // Increased to 16KB
         private readonly List<RfidData> _storedRfidData = new List<RfidData>();
+        private List<RfidData> _snapshotData = new List<RfidData>();
 
         // Buffer to accumulate incomplete hex data
         private StringBuilder _hexBuffer = new StringBuilder();
@@ -75,16 +76,38 @@ namespace RFIDReaderPortal.Services
                 Task.Run(async () => await ListenAsync());
             }
         }
-
         public void Stop()
         {
             if (IsRunning)
             {
-                _tcpListener.Stop();
                 IsRunning = false;
-                _logger.LogInformation("TCP Listener stopped");
+                _tcpListener.Stop();
+
+                lock (_storedRfidData)
+                {
+                    _snapshotData = _storedRfidData
+                        .Select(d => new RfidData
+                        {
+                            TagId = d.TagId,
+                            Timestamp = d.Timestamp,
+                            LapTimes = new List<DateTime>(d.LapTimes)
+                        })
+                        .ToList();
+                }
+
+                _logger.LogInformation("TCP Listener stopped and snapshot taken.");
             }
         }
+
+        //public void Stop()
+        //{
+        //    if (IsRunning)
+        //    {
+        //        IsRunning = false;
+        //        _tcpListener.Stop();
+        //        _logger.LogInformation("TCP Listener stopped");
+        //    }
+        //}
 
         private async Task ListenAsync()
         {
@@ -255,7 +278,7 @@ namespace RFIDReaderPortal.Services
                    
                     else
                     {
-                        int maxLaps = _eventName == "608fc379-bc49-42aa-95cd-21a6eb9d53f5" ? 2 :
+                        int maxLaps = _eventName == "608fc379-bc49-42aa-95cd-21a6eb9d53f5" ? 5 :
                          _eventName == "917a859f-3155-4f0f-b702-8fe67ba82949" ? 3 : 1;
 
                         if (rfidData.LapTimes.Count < maxLaps)
@@ -385,14 +408,24 @@ namespace RFIDReaderPortal.Services
             _hexBuffer.Clear();
             _logger.LogInformation("All RFID data cleared");
         }
-
         public RfidData[] GetReceivedData()
         {
+            if (!IsRunning && _snapshotData != null)
+                return _snapshotData.OrderBy(d => d.TagId).ToArray();
+
             return _receivedDataDict.Values
                 .Where(d => d.Timestamp > _lastClearTime)
                 .OrderBy(d => d.TagId)
                 .ToArray();
         }
+
+        //public RfidData[] GetReceivedData()
+        //{
+        //    return _receivedDataDict.Values
+        //        .Where(d => d.Timestamp > _lastClearTime)
+        //        .OrderBy(d => d.TagId)
+        //        .ToArray();
+        //}
 
         public string[] GetHexData()
         {
