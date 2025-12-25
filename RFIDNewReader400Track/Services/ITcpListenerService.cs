@@ -18,6 +18,6 @@ namespace RFIDReaderPortal.Services
 
         void ClearData();
 
-        void SetParameters(string accessToken, string userid, string recruitid, string deviceId, string location, string eventName, string ipaddress,string sesionid);
+        void SetParameters(string accessToken, string userid, string recruitid, string deviceId, string location, string eventName, string eventId, string ipaddress,string sesionid);
     }
 }

@@ -285,7 +285,7 @@
                 let lapCount = item.lapTimes.length;
                 let timeHtml = "";
 
-                if (eventName == "0b5faa53-698e-46d6-9a61-ccc04885ea1d") {
+                if (eventName == "100 Meter Running") {
                     // Show only latest time for 100m
                     timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
                     lapCount = ""; // Hide lap count
@@ -308,7 +308,7 @@
             });
 
             // Hide lap count column for 100m
-            if (eventName === "0b5faa53-698e-46d6-9a61-ccc04885ea1d") {
+            if (eventName === "100 Meter Running") {
                 $("th:nth-child(3), td:nth-child(3)").hide();
             } else {
                 $("th:nth-child(3), td:nth-child(3)").show();

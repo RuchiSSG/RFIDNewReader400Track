@@ -144,7 +144,9 @@ namespace RFIDReaderPortal.Controllers
                     if (!string.IsNullOrEmpty(item.Location))
                         Response.Cookies.Append("Location", item.Location);
                     if (!string.IsNullOrEmpty(item.eventName))
-                        Response.Cookies.Append("EventName", item.EventId);
+                        Response.Cookies.Append("EventName", item.eventName);
+                    if (!string.IsNullOrEmpty(item.eventName))
+                        Response.Cookies.Append("EventId", item.EventId);
                 }
 
                 if (ipDataResponse.Count == 0)
@@ -317,13 +319,14 @@ namespace RFIDReaderPortal.Controllers
                 string recruitid = Request.Cookies["recruitid"];
                 string deviceId = Request.Cookies["DeviceId"];
                 string location = Request.Cookies["Location"];
-                string eventName = Request.Cookies["EventId"];
+                string eventName = Request.Cookies["EventName"];
+                string eventId = Request.Cookies["EventId"];
                 string ipaddress = Request.Cookies["IpAddress"];
                 string sesionid = Request.Cookies["sessionid"];
 
                 if (!_tcpListenerService.IsRunning)
                 {
-                    _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, sesionid, ipaddress);
+                    _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, eventId, sesionid, ipaddress);
                     _tcpListenerService.Start();
                 }
 
@@ -441,7 +444,7 @@ namespace RFIDReaderPortal.Controllers
             string ipaddress = Request.Cookies["IpAddress"];
             string sesionid = Request.Cookies["sessionid"];
 
-            _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, ipaddress, sesionid);
+            _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, eventId, ipaddress, sesionid);
 
             // Ensure the listener is running
             if (!_tcpListenerService.IsRunning)

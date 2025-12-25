@@ -109,12 +109,12 @@ namespace RFIDReaderPortal.Services
         }
         public async Task<bool> PostRFIDRunningLogAsync(
             string accessToken, string userid, string recruitid, string DeviceId,
-            string Location, string eventName, List<RfidData> rfidDataList,
+            string Location, string eventName, string eventId, List<RfidData> rfidDataList,
             string sessionid, string ipaddress)
         {
             try
             {
-                var url = $"{_baseUrl}RFIDChestNoMapping/RFIDRunningLog?userid={userid}&recruitid={recruitid}&deviceid={DeviceId}&Location={Location}&eventName={eventName}&sessionid={sessionid}&ipaddress={ipaddress}";
+                var url = $"{_baseUrl}RFIDChestNoMapping/RFIDRunningLog?userid={userid}&recruitid={recruitid}&deviceid={DeviceId}&Location={Location}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
 
                 // Group by TagId
@@ -127,8 +127,8 @@ namespace RFIDReaderPortal.Services
                     }).ToList();
 
                 // Decide lap count based on event
-                int totalLaps = eventName == "608fc379-bc49-42aa-95cd-21a6eb9d53f5" ? 5 :
-                              eventName == "917a859f-3155-4f0f-b702-8fe67ba82949" ? 3 :
+                int totalLaps = eventName == "1600 Meter Running" ? 5 :
+                              eventName == "800 Meter Running" ? 3 :
                                 1;
 
                 // Prepare final request data

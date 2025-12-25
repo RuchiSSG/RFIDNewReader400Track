@@ -21,6 +21,7 @@ namespace RFIDReaderPortal.Services
         private string _deviceId;
         private string _location;
         private string _eventName;
+        private string _eventId;
         private string _sessionid;
         private string _ipaddress;
 
@@ -52,12 +53,13 @@ namespace RFIDReaderPortal.Services
         }
 
         public void SetParameters(string accessToken, string userid, string recruitid,
-                                  string deviceId, string location, string eventName,
+                                  string deviceId, string location, string eventName, string eventId,
                                   string ipaddress, string sessionid)
         {
             _accessToken = accessToken;
             _userid = userid;
             _recruitid = recruitid;
+            _eventId = eventId;
             _deviceId = deviceId;
             _location = location;
             _eventName = eventName;
@@ -263,7 +265,7 @@ namespace RFIDReaderPortal.Services
 
                 if (timeSinceLastScan > _duplicatePreventionWindow)
                 {
-                    if (_eventName == "0b5faa53-698e-46d6-9a61-ccc04885ea1d") // 100m
+                    if (_eventName == "100 Meter Running") // 100m
                     {
                         // Always update for 100m (single lap)
                         rfidData.Timestamp = timestamp;
@@ -278,8 +280,8 @@ namespace RFIDReaderPortal.Services
                    
                     else
                     {
-                        int maxLaps = _eventName == "608fc379-bc49-42aa-95cd-21a6eb9d53f5" ? 5 :
-                         _eventName == "917a859f-3155-4f0f-b702-8fe67ba82949" ? 3 : 1;
+                        int maxLaps = _eventName == "1600 Meter Running" ? 5 :
+                         _eventName == "800 Meter Running" ? 3 : 1;
 
                         if (rfidData.LapTimes.Count < maxLaps)
                         {
@@ -391,7 +393,7 @@ namespace RFIDReaderPortal.Services
 
             await _apiService.PostRFIDRunningLogAsync(
                 _accessToken, _userid, _recruitid, _deviceId,
-                _location, _eventName, dataToInsert,
+                _location, _eventName,_eventId, dataToInsert,
                 _sessionid, _ipaddress
             );
         }
