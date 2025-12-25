@@ -1,0 +1,443 @@
+﻿@model RFIDReaderPortal.Models.RFIDViewModel
+@{
+    ViewData["Title"] = "RFID Reader Listener Section";
+
+    var events = Model.Events;
+}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="d-flex justify-content-end mb-3">
+    <button id="resetButton" type="button" class="btn btn-warning me-2">Reset</button>
+    <a href="@Url.Action("Login", "Account")" class="btn btn-outline-danger">Logout</a>
+   @*  <button id="printButton" type="button" class="btn btn-primary">
+        Print
+    </button> *@
+</div>
+
+<h2>RFID Reader Section</h2>
+<div class="alert alert-info">
+    <strong>Notice:</strong> You have been redirected here because the IP Address is already registered!
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="shadow-sm p-3 mb-5 bg-white rounded">
+            <form id="eventForm" method="post" asp-action="RFID">
+                @foreach (var item in Model.IPDataResponse)
+                {
+
+                    <div class="row mb-3 align-items-center">
+                        <label for="deviceId" class="col-sm-3 col-form-label"> Device ID: </label>
+                        <div class="col-sm-9">
+                            <input type="text" id="deviceId" class="form-control" value="@item.DeviceId" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label for="eventName" class="col-sm-3 col-form-label">Event Name:</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="eventName" class="form-control" value="@item.eventName" readonly>
+                        </div>
+                    </div>
+
+
+
+                    <div class="row mb-3 align-items-center">
+                        <label for="location" class="col-sm-3 col-form-label">Location:</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="location" class="form-control" value="@item.Location" readonly>
+                        </div>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <h1 class="mt-4">RFID Data</h1>
+    <div id="debugInfo" class="alert alert-info mb-3"></div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Sr. No.</th>
+                <th>Tag ID</th>
+                <th>Lap Count</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+
+        <tbody id="rfidDataBody">
+            @*  @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                // Group by TagId for count + latest timestamp
+                var grouped = Model.RfidDataArray
+                .GroupBy(x => x.TagId)
+                .Select(g => new
+                {
+                    TagId = g.Key,
+                    Count = g.Count(),
+                    Timestamp = g.OrderByDescending(t => t.Timestamp).First().Timestamp
+                });
+
+                foreach (var item in grouped)
+                {
+                    <tr>
+                        <td>@item.TagId</td>
+                        <td>@item.Timestamp.ToString("HH:mm:ss:fff")</td>
+                        <td>@item.Count</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3">No data available</td>
+                </tr>
+            } *@
+            @*        @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                var grouped = Model.RfidDataArray
+                .GroupBy(x => x.TagId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Timestamp).ToList());
+
+                foreach (var entry in grouped)
+                {
+                    var tagId = entry.Key;
+                    var times = entry.Value.Select(t => t.Timestamp.ToString("HH:mm:ss:fff")).ToList();
+                    var lapCount = times.Count;
+
+                    <tr>
+                        <td>@tagId</td>
+                        <td>@lapCount</td>
+                        <td>
+                            @foreach (var t in times)
+                            {
+                                <div>@t</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="3">No data available</td></tr>
+            } *@
+            @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                var grouped = Model.RfidDataArray
+                .GroupBy(x => x.TagId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Timestamp).ToList());
+
+                int srNo = 1;
+
+                foreach (var entry in grouped)
+                {
+                    var tagId = entry.Key;
+                   @*  var times = entry.Value
+                    .Select(t => t.Timestamp.HasValue ? t.Timestamp.Value.ToString("HH:mm:ss:fff") : null)
+                    .ToList(); *@
+
+                    var times = entry.Value.Select(t => t.Timestamp.ToString("HH:mm:ss:fff")).ToList();
+                    var lapCount = times.Count;
+
+                    <tr>
+                        <td>@srNo</td>              @* Serial Number *@
+                        <td>@tagId</td>
+                        <td>@lapCount</td>
+                        <td>
+                            @foreach (var t in times)
+                            {
+                                <div>@t</div>
+                            }
+                        </td>
+                    </tr>
+
+                    srNo++;
+                }
+            }
+            else
+            {
+                <tr><td colspan="4">No data available</td></tr>
+            }
+    </table>
+</div>
+
+
+@* <div class="container">
+    <h1 class="mt-4">RFID Data</h1>
+    <div id="debugInfo" class="alert alert-info mb-3"></div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Tag ID</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="rfidDataBody">
+            @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                @foreach (var item in Model.RfidDataArray)
+                {
+                    <tr>
+                        <td>@item.TagId</td>
+                        <td>@item.Timestamp.ToString("HH:mm:ss:fff")</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="2">No data available</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div> *@
+
+<button id="stopButton" type="button" class="btn btn-danger" disabled>Stop</button>
+<button id="startButton" type="button" class="btn btn-success">Start</button>
+<button id="clearButton" type="button" class="btn btn-warning" disabled>Clear Data</button>
+
+@section Scripts {
+    <script>
+        // Configure toastr
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "5000"
+        };
+
+        // Success message after login
+        @if (TempData["SuccessMessage"] != null)
+        {
+                <text>
+                    toastr.success('@TempData["SuccessMessage"]');
+                </text>
+        }
+
+            $(document).ready(function () {
+                let updateInterval;
+                let isRunning = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.IsRunning));
+
+
+                $('#clearButton').click(function () {
+                    $.ajax({
+                        url: '@Url.Action("ClearData", "RFID")',
+                        type: 'POST',
+                        success: function (response) {
+                            if (response.success) {
+                                $('#rfidDataBody').empty();
+                                $('#debugInfo').text('Data cleared successfully.');
+                            } else {
+                                $('#debugInfo').text('Failed to clear data.');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('Error clearing data:', error);
+                            $('#debugInfo').text('Error clearing data: ' + error);
+                        }
+                    });
+                });
+
+                function updateRfidData() {
+                    if (!isRunning) return;
+
+                    $.ajax({
+                        url: '@Url.Action("GetData", "RFID")',
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function (response) {
+                            $('#debugInfo').text('Data received: ' + response.rfidDataArray.length + ' items');
+                            updateTable(response.rfidDataArray);
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('Error fetching RFID data:', error);
+                            $('#debugInfo').text('Error fetching data: ' + error);
+                        },
+                        complete: function () {
+                            if (isRunning) {
+                                updateInterval = setTimeout(updateRfidData, 5000);
+                            }
+                        }
+                    });
+                }
+                        function updateTable(data) {
+            const $body = $('#rfidDataBody');
+            $body.empty();
+
+            if (!data || data.length === 0) {
+                $body.append(`<tr><td colspan="4">No data available</td></tr>`);
+                return;
+            }
+
+            const eventName = $("#eventName").val();
+
+            const grouped = {};
+            data.forEach(item => {
+                grouped[item.tagId] = item; // always latest
+            });
+
+            let srNo = 1;
+            Object.values(grouped).forEach(item => {
+
+                let lapCount = item.lapTimes.length;
+                let timeHtml = "";
+
+                if (eventName == "0b5faa53-698e-46d6-9a61-ccc04885ea1d") {
+                    // Show only latest time for 100m
+                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+                    lapCount = ""; // Hide lap count
+                }
+               else {
+                    // Show each lap with "Lap x: timestamp"
+                    timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
+                }
+
+                $body.append(`
+                    <tr>
+                        <td>${srNo}</td>
+                        <td>${item.tagId}</td>
+                        <td>${lapCount}</td>
+                        <td>${timeHtml}</td>
+                    </tr>
+                `);
+
+                srNo++;
+            });
+
+            // Hide lap count column for 100m
+            if (eventName === "0b5faa53-698e-46d6-9a61-ccc04885ea1d") {
+                $("th:nth-child(3), td:nth-child(3)").hide();
+            } else {
+                $("th:nth-child(3), td:nth-child(3)").show();
+            }
+        }
+              
+                function toggleListenerState(start) {
+                    isRunning = start;
+                    if (start) {
+                        // First clear data
+                        $.ajax({
+                            url: '@Url.Action("ClearData", "RFID")',
+                            type: 'POST',
+                            success: function (response) {
+                                if (response.success) {
+                                    $('#rfidDataBody').empty();
+                                    $('#debugInfo').text('Data cleared successfully. Starting RFID listener...');
+
+                                    // Now start listening
+                                    updateRfidData();
+                                    $('#startButton').prop('disabled', true);
+                                    $('#stopButton').prop('disabled', false);
+                                    $('#clearButton').prop('disabled', true);
+                                } else {
+                                    $('#debugInfo').text('Failed to clear data.');
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                console.error('Error clearing data:', error);
+                                $('#debugInfo').text('Error clearing data: ' + error);
+                            }
+                        });
+                    } else {
+                        $('#debugInfo').text('RFID listener stopped');
+                        $('#startButton').prop('disabled', false);
+                        $('#stopButton').prop('disabled', true);
+                        $('#clearButton').prop('disabled', false);
+                        previousTagIds = [];
+                    }
+                }
+
+                $('#startButton').click(function () {
+                    if (!isRunning) {
+                        toggleListenerState(true);
+                    }
+                });
+
+
+
+                $('#stopButton').click(function () {
+                    $.post('@Url.Action("Stop", "RFID")', function (response) {
+                        if (response.success) {
+                            $('#debugInfo').text(response.message);
+                        } else {
+                            $('#debugInfo').text('Failed to insert RFID data.');
+                        }
+                        toggleListenerState(false);
+                    }).fail(function (xhr, status, error) {
+                        console.error('Error stopping listener:', error);
+                        $('#debugInfo').text('Error stopping listener: ' + error);
+                    });
+                });
+
+
+
+                $('#clearButton').click(function () {
+                    $('#rfidDataBody').empty().append('<tr><td colspan="2">No data available</td></tr>');
+                    $('#debugInfo').text('RFID data cleared');
+                    previousTagIds = [];
+                });
+
+                if (isRunning) {
+                    toggleListenerState(true);
+                } else {
+                    $('#debugInfo').text('Click "Start" to begin listening for RFID data');
+                }
+
+                $('#resetButton').click(function (event) {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'You won\'t be able to undo this!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, reset it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("Reset", "RFID")',
+                                type: 'POST',
+                                success: function (response) {
+                                    if (response.success) {
+                                        $('#debugInfo').text(response.message);
+                                        console.log(response.message);
+                                        Swal.fire(
+                                            'Reset!',
+                                            'Reset successful!',
+                                            'success'
+                                        );
+                                    } else {
+                                        $('#debugInfo').text('Error resetting system.');
+                                        Swal.fire(
+                                            'Error!',
+                                            'There was an issue resetting the system.',
+                                            'error'
+                                        );
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error('Error occurred while resetting:', error);
+                                    $('#debugInfo').text('An error occurred while resetting.');
+                                    Swal.fire(
+                                        'Error!',
+                                        'An error occurred while resetting the system.',
+                                        'error'
+                                    );
+                                }
+                            });
+                        } else {
+                            console.log("Reset canceled by the user.");
+                        }
+                    });
+                });
+            });
+    </script>
+
+
+
+
+
+}
