@@ -501,11 +501,12 @@ namespace RFIDReaderPortal.Controllers
                 string deviceId = Request.Cookies["DeviceId"];
                 string location = Request.Cookies["Location"];
                 string eventName = Request.Cookies["EventName"];
+                string eventId= Request.Cookies["EventId"];
                 string ipaddress = Request.Cookies["IpAddress"];
                 string sessionid = Request.Cookies["sessionid"];
 
                 // Call the service method to get a strongly-typed response
-                var InsertRFID = await _apiService.DeleteRFIDRecordsAsync(accessToken, userid, recruitid, deviceId, location, eventName, sessionid, ipaddress);
+                var InsertRFID = await _apiService.DeleteRFIDRecordsAsync(accessToken, userid, recruitid, deviceId, location, eventName, eventId, sessionid, ipaddress);
 
                 // Extract the token and update the cookies
                 if (InsertRFID?.outcome != null && !string.IsNullOrEmpty(InsertRFID.outcome.tokens))

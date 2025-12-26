@@ -260,11 +260,11 @@ namespace RFIDReaderPortal.Services
         }
 
 
-        public async Task<DeleteRfid> DeleteRFIDRecordsAsync(string accessToken, string userid, string recruitid, string deviceId, string location, string eventName, string sessionid, string ipaddress)
+        public async Task<DeleteRfid> DeleteRFIDRecordsAsync(string accessToken, string userid, string recruitid, string deviceId, string location, string eventName, string eventId, string sessionid, string ipaddress)
         {
             try
             {
-                var url = $"{_baseUrl}RFIDChestNoMapping/RIFDRunningDelete?userid={userid}&recruitid={recruitid}&deviceid={deviceId}&location={location}&eventName={eventName}&sessionid={sessionid}&ipaddress={ipaddress}";
+                var url = $"{_baseUrl}RFIDChestNoMapping/RIFDRunningDelete?userid={userid}&recruitid={recruitid}&deviceid={deviceId}&location={location}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
 
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
