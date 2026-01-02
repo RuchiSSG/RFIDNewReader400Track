@@ -135,12 +135,6 @@ namespace RFIDReaderPortal.Services
                 var requestData = groupedData.Select(x => new
                 {
                    RFIDdtagata = x.TagId,
-                    //Lap1 = x.Laps.Count >= 1 && x.Laps[0].Timestamp.HasValue ? x.Laps[0].Timestamp.Value.ToString("HH:mm:ss:fff") : null,
-                    //Lap2 = x.Laps.Count >= 2 && x.Laps[1].Timestamp.HasValue ? x.Laps[1].Timestamp.Value.ToString("HH:mm:ss:fff") : null,
-                    //Lap3 = x.Laps.Count >= 3 && x.Laps[2].Timestamp.HasValue ? x.Laps[2].Timestamp.Value.ToString("HH:mm:ss:fff") : null,
-                    //Lap4 = x.Laps.Count >= 4 && x.Laps[3].Timestamp.HasValue ? x.Laps[3].Timestamp.Value.ToString("HH:mm:ss:fff") : null,
-                    //Lap5 = x.Laps.Count >= 5 && x.Laps[4].Timestamp.HasValue ? x.Laps[4].Timestamp.Value.ToString("HH:mm:ss:fff") : null,
-
                     Lap1 = x.Laps.Count >= 1 ? x.Laps[0].Timestamp.ToString("HH:mm:ss:fff") : null,
                     Lap2 = x.Laps.Count >= 2 ? x.Laps[1].Timestamp.ToString("HH:mm:ss:fff") : null,
                     Lap3 = x.Laps.Count >= 3 ? x.Laps[2].Timestamp.ToString("HH:mm:ss:fff") : null,

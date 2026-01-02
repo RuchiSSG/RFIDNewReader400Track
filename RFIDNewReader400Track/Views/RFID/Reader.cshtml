@@ -5,13 +5,23 @@
     var events = Model.Events;
 }
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    @@media print {
+        button, .btn, .alert {
+            display: none !important;
+        }
 
+        body {
+            margin: 20px;
+        }
+    }
+</style>
 <div class="d-flex justify-content-end mb-3">
     <button id="resetButton" type="button" class="btn btn-warning me-2">Reset</button>
     <a href="@Url.Action("Login", "Account")" class="btn btn-outline-danger">Logout</a>
-   @*  <button id="printButton" type="button" class="btn btn-primary">
+    <button type="button" class="btn btn-secondary" onclick="printPage()">
         Print
-    </button> *@
+    </button>
 </div>
 
 <h2>RFID Reader Section</h2>
@@ -290,6 +300,11 @@
                     timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
                     lapCount = ""; // Hide lap count
                 }
+                 if (eventName == "500 meter Running") {
+                    // Show only latest time for 100m
+                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+                    lapCount = ""; // Hide lap count
+                }
                else {
                     // Show each lap with "Lap x: timestamp"
                     timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
@@ -434,6 +449,9 @@
                     });
                 });
             });
+                        function printPage() {
+            window.print();
+        }
     </script>
 
 
