@@ -72,6 +72,8 @@
             <tr>
                 <th>Sr. No.</th>
                 <th>Tag ID</th>
+                <th>Chest No</th>
+                 <th>Barcode</th>
                 <th>Lap Count</th>
                 <th>Timestamp</th>
             </tr>
@@ -329,6 +331,33 @@
                 $("th:nth-child(3), td:nth-child(3)").show();
             }
         }
+                if (start) {
+            // Hide Chest No and Barcode columns
+            toggleColumnVisibility(false);
+
+            // First clear data
+            $.ajax({
+                url: '@Url.Action("ClearData", "RFID")',
+                type: 'POST',
+                success: function (response) {
+                    if (response.success) {
+                        $('#rfidDataBody').empty();
+                        $('#debugInfo').text('Data cleared successfully. Starting RFID listener...');
+                        updateRfidData();
+                        $('#startButton').prop('disabled', true);
+                        $('#stopButton').prop('disabled', false);
+                        $('#clearButton').prop('disabled', true);
+                    } else {
+                        $('#debugInfo').text('Failed to clear data.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error clearing data:', error);
+                    $('#debugInfo').text('Error clearing data: ' + error);
+                }
+            });
+        }
+
               
                 function toggleListenerState(start) {
                     isRunning = start;
@@ -371,22 +400,66 @@
                     }
                 });
 
+                    $('#stopButton').click(function () {
 
+            $.post('@Url.Action("Stop", "RFID")', function (response) {
 
-                $('#stopButton').click(function () {
-                    $.post('@Url.Action("Stop", "RFID")', function (response) {
-                        if (response.success) {
-                            $('#debugInfo').text(response.message);
-                        } else {
-                            $('#debugInfo').text('Failed to insert RFID data.');
-                        }
-                        toggleListenerState(false);
-                    }).fail(function (xhr, status, error) {
-                        console.error('Error stopping listener:', error);
-                        $('#debugInfo').text('Error stopping listener: ' + error);
+                if (response.success && response.data) {
+
+                    // Map server data to JS-friendly camelCase
+                    const finalData = response.data.map(x => ({
+                        rfid: x.RFID,
+                        chestNo: x.ChestNo,
+                        barcode: x.Barcode,
+                        lapCount: x.LapCount,
+                        currentDateTime: x.CurrentDateTime
+                    }));
+
+                    // Optional: group by RFID to remove duplicates (last entry wins)
+                    const groupedData = {};
+                    finalData.forEach(item => {
+                        groupedData[item.rfid] = item;
                     });
-                });
 
+                    updateTableWithChest(Object.values(groupedData));
+                    toggleColumnVisibility(true);
+                    $('#debugInfo').text("Final data loaded");
+                }
+                else {
+                    $('#debugInfo').text("No data available");
+                }
+
+                toggleListenerState(false);
+            });
+        });
+
+
+
+
+
+                // $('#stopButton').click(function () {
+                //     $.post('@Url.Action("Stop", "RFID")', function (response) {
+                //         if (response.success) {
+                //             $('#debugInfo').text(response.message);
+                //         } else {
+                //             $('#debugInfo').text('Failed to insert RFID data.');
+                //         }
+                //         toggleListenerState(false);
+                //     }).fail(function (xhr, status, error) {
+                //         console.error('Error stopping listener:', error);
+                //         $('#debugInfo').text('Error stopping listener: ' + error);
+                //     });
+                // });
+
+                        function toggleColumnVisibility(showChestBarcode) {
+            if (showChestBarcode) {
+                $("th:nth-child(3), td:nth-child(3)").show(); // Chest No
+                $("th:nth-child(4), td:nth-child(4)").show(); // Barcode
+            } else {
+                $("th:nth-child(3), td:nth-child(3)").hide();
+                $("th:nth-child(4), td:nth-child(4)").hide();
+            }
+        }
 
 
                 $('#clearButton').click(function () {

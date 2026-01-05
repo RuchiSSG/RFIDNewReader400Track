@@ -7,7 +7,8 @@
         public List<DateTime> LapTimes { get; set; }
         public byte Rssi { get; set; }
         public byte Antenna { get; set; }
-
+        public string? ChestNo { get; set; }
+        public string? Barcode { get; set; }
         public int LapCount => LapTimes?.Count ?? 0;
 
         public TimeSpan? LastLapDuration
@@ -25,5 +26,16 @@
         //public DateTime Timestamp { get; set; }
         //// NEW —— store all laps (timestamps)
         //public List<DateTime> LapTimes { get; set; } = new List<DateTime>();
+    }
+    public class ChestBarcodeDto
+    {
+        public string? RFID { get; set; }
+        public string? ChestNo { get; set; }
+        public string? Barcode { get; set; }
+    }
+    public class ChestInfo
+    {
+        public string ChestNo { get; set; }
+        public string Barcode { get; set; }
     }
 }

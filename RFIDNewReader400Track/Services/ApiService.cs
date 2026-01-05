@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using RFIDReaderPortal.Models;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -70,7 +71,52 @@ namespace RFIDReaderPortal.Services
             }
             throw new Exception("Failed to fetch recruitment events.");
         }
+        //public async Task<List<ChestBarcodeDto>> GetAllChestNoAsync(string accessToken,string userid,string recruitid,string sessionid,string ipaddress)
+        //{
+        //    var url = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&sessionid={sessionid}&ipaddress={ipaddress}";
 
+        //    var request = new HttpRequestMessage(HttpMethod.Get, url);
+        //    request.Headers.Authorization =
+        //        new AuthenticationHeaderValue("Bearer", accessToken);
+
+        //    var response = await _httpClient.SendAsync(request);
+             
+        //        throw new Exception("Failed to fetch chest barcode data.");
+
+        //    var json = await response.Content.ReadAsStringAsync();
+
+        //    // 🔥 STEP 1: Deserialize wrapper
+        //    var result = JsonConvert.DeserializeObject<Result>(json);
+
+        //    // 🔥 STEP 2: Extract Data safely
+        //    if (result?.Data == null)
+        //        return new List<ChestBarcodeDto>();
+
+        //    var dataJson = result.Data.ToString();
+
+        //    // 🔥 STEP 3: Deserialize actual list
+        //    return JsonConvert.DeserializeObject<List<ChestBarcodeDto>>(dataJson)
+        //           ?? new List<ChestBarcodeDto>();
+        //}
+
+
+        //public async Task<object> GetAllchestno(string accessToken, string userid, string recruitid, string sesionid, string ipaddress)
+        //{
+        //    var url = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&sessionid={sesionid}&ipaddress={ipaddress}";
+
+        //    var request = new HttpRequestMessage(HttpMethod.Get, url);
+        //    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        //    var response = await _httpClient.SendAsync(request);
+
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        dynamic content = await response.Content.ReadAsStringAsync();
+        //        dynamic desobj = JsonConvert.DeserializeObject(content);
+        //        return desobj;
+        //    }
+        //    throw new Exception("Failed to fetch recruitment events.");
+        //}
         public async Task<List<RecruitmentDto>> GetAllRecruitmentsAsync(string accessToken, string userid, string recruitid, string sesionid, string ipaddress)
         {
             var url = $"{_baseUrl}RecruitmentEvent/GetAllRecruitEvent?userid={userid}&recruitid={recruitid}&sessionid={sesionid}&ipaddress={ipaddress}";
@@ -107,61 +153,130 @@ namespace RFIDReaderPortal.Services
             }
             throw new Exception("Failed to fetch recruitment events.");
         }
-        public async Task<bool> PostRFIDRunningLogAsync(
-            string accessToken, string userid, string recruitid, string DeviceId,
-            string Location, string eventName, string eventId, List<RfidData> rfidDataList,
-            string sessionid, string ipaddress)
+        //public async Task<bool> PostRFIDRunningLogAsync(
+        //    string accessToken, string userid, string recruitid, string DeviceId,
+        //    string Location, string eventName, string eventId, List<RfidData> rfidDataList,
+        //    string sessionid, string ipaddress)
+        //{
+        //    try
+        //    {
+        //        var url = $"{_baseUrl}RFIDChestNoMapping/RFIDRunningLog?userid={userid}&recruitid={recruitid}&deviceid={DeviceId}&Location={Location}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
+        //        var request = new HttpRequestMessage(HttpMethod.Post, url);
+
+        //        // Group by TagId
+        //        var groupedData = rfidDataList
+        //            .GroupBy(x => x.TagId)
+        //            .Select(g => new
+        //            {
+        //                TagId = g.Key,
+        //                Laps = g.OrderBy(x => x.Timestamp).ToList()
+        //            }).ToList();
+
+        //        // Decide lap count based on event
+        //        int totalLaps = eventName == "1600 Meter Running" ? 5 :
+        //                      eventName == "800 Meter Running" ? 3 :
+        //                        1;
+
+        //        // Prepare final request data
+        //        var requestData = groupedData.Select(x => new
+        //        {
+        //           RFIDdtagata = x.TagId,
+        //            Lap1 = x.Laps.Count >= 1 ? x.Laps[0].Timestamp.ToString("HH:mm:ss:fff") : null,
+        //            Lap2 = x.Laps.Count >= 2 ? x.Laps[1].Timestamp.ToString("HH:mm:ss:fff") : null,
+        //            Lap3 = x.Laps.Count >= 3 ? x.Laps[2].Timestamp.ToString("HH:mm:ss:fff") : null,
+        //            Lap4 = x.Laps.Count >= 4 ? x.Laps[3].Timestamp.ToString("HH:mm:ss:fff") : null,
+        //            Lap5 = x.Laps.Count >= 5 ? x.Laps[4].Timestamp.ToString("HH:mm:ss:fff") : null,
+
+
+        //            TotalLaps = totalLaps,
+        //            EventName = eventName
+        //        }).ToList();
+
+
+        //        // Send request
+        //        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        //        request.Content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+
+        //        var response = await _httpClient.SendAsync(request);
+        //        if (response.IsSuccessStatusCode)
+        //        {
+        //            var url1 = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&sessionid={sessionid}&ipaddress={ipaddress}";
+        //            var request1 = new HttpRequestMessage(HttpMethod.Get, url1);
+        //            var response1 = await _httpClient.SendAsync(request1);
+        //        }
+
+        //        return response.IsSuccessStatusCode;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error occurred while inserting RFID data");
+        //        return false;
+        //    }
+        //}
+
+        public async Task<string?> PostRFIDRunningLogAsync(
+    string accessToken, string userid, string recruitid, string DeviceId,
+    string Location, string eventName, string eventId, List<RfidData> rfidDataList,
+    string sessionid, string ipaddress)
         {
             try
             {
                 var url = $"{_baseUrl}RFIDChestNoMapping/RFIDRunningLog?userid={userid}&recruitid={recruitid}&deviceid={DeviceId}&Location={Location}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
+
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
 
-                // Group by TagId
                 var groupedData = rfidDataList
                     .GroupBy(x => x.TagId)
                     .Select(g => new
                     {
-                        TagId = g.Key,
+                        RFIDdtagata = g.Key,
                         Laps = g.OrderBy(x => x.Timestamp).ToList()
                     }).ToList();
 
-                // Decide lap count based on event
                 int totalLaps = eventName == "1600 Meter Running" ? 5 :
-                              eventName == "800 Meter Running" ? 3 :
-                                1;
+                                eventName == "800 Meter Running" ? 3 : 1;
 
-                // Prepare final request data
                 var requestData = groupedData.Select(x => new
                 {
-                   RFIDdtagata = x.TagId,
-                    Lap1 = x.Laps.Count >= 1 ? x.Laps[0].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap2 = x.Laps.Count >= 2 ? x.Laps[1].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap3 = x.Laps.Count >= 3 ? x.Laps[2].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap4 = x.Laps.Count >= 4 ? x.Laps[3].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap5 = x.Laps.Count >= 5 ? x.Laps[4].Timestamp.ToString("HH:mm:ss:fff") : null,
-
-
+                    RFIDdtagata = x.RFIDdtagata,
+                    Lap1 = x.Laps.Count > 0 ? x.Laps[0].Timestamp.ToString("HH:mm:ss:fff") : null,
+                    Lap2 = x.Laps.Count > 1 ? x.Laps[1].Timestamp.ToString("HH:mm:ss:fff") : null,
+                    Lap3 = x.Laps.Count > 2 ? x.Laps[2].Timestamp.ToString("HH:mm:ss:fff") : null,
+                    Lap4 = x.Laps.Count > 3 ? x.Laps[3].Timestamp.ToString("HH:mm:ss:fff") : null,
+                    Lap5 = x.Laps.Count > 4 ? x.Laps[4].Timestamp.ToString("HH:mm:ss:fff") : null,
                     TotalLaps = totalLaps,
                     EventName = eventName
                 }).ToList();
 
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", accessToken);
 
-                // Send request
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                request.Content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+                request.Content = new StringContent(
+                    JsonConvert.SerializeObject(requestData),
+                    Encoding.UTF8,
+                    "application/json");
 
                 var response = await _httpClient.SendAsync(request);
 
-                return response.IsSuccessStatusCode;
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                // ✅ INSERT KE BAAD CHEST DATA LAO
+                var url1 = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
+
+                var response1 = await _httpClient.GetAsync(url1);
+
+                if (response1.IsSuccessStatusCode)
+                    return await response1.Content.ReadAsStringAsync();
+
+                return null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while inserting RFID data");
-                return false;
+                return null;
             }
         }
-
 
         //public async Task<bool> PostRFIDRunningLogAsync(string accessToken, string userid, string recruitid, string DeviceId, string Location, string eventName, List<RfidData> rfidDataList, string sessionid, string ipaddress)
         //{

@@ -5,7 +5,8 @@ namespace RFIDReaderPortal.Services
 {
     public interface ITcpListenerService
     {
-        Task InsertStoredRfidDataAsync();
+        // Task InsertStoredRfidDataAsync();
+        public Task<string?> InsertStoredRfidDataAsync();
         bool IsRunning { get; }
 
         void Start();

@@ -455,7 +455,31 @@ namespace RFIDReaderPortal.Services
         //    return result.ToList();
         //}
 
-        public async Task InsertStoredRfidDataAsync()
+        //public async Task InsertStoredRfidDataAsync()
+        //{
+        //    List<RfidData> dataToInsert;
+
+        //    lock (_storedRfidData)
+        //    {
+        //        if (_storedRfidData.Count == 0)
+        //        {
+        //            _logger.LogInformation("No stored RFID data to insert");
+        //            return;
+        //        }
+
+        //        dataToInsert = new List<RfidData>(_storedRfidData);
+        //        _storedRfidData.Clear();
+        //    }
+
+        //    _logger.LogInformation($"Inserting {dataToInsert.Count} RFID records");
+
+        //    await _apiService.PostRFIDRunningLogAsync(
+        //        _accessToken, _userid, _recruitid, _deviceId,
+        //        _location, _eventName, _eventId, dataToInsert,
+        //        _sessionid, _ipaddress
+        //    );
+        //}
+        public async Task<string?> InsertStoredRfidDataAsync()
         {
             List<RfidData> dataToInsert;
 
@@ -464,7 +488,7 @@ namespace RFIDReaderPortal.Services
                 if (_storedRfidData.Count == 0)
                 {
                     _logger.LogInformation("No stored RFID data to insert");
-                    return;
+                    return null;
                 }
 
                 dataToInsert = new List<RfidData>(_storedRfidData);
@@ -473,7 +497,8 @@ namespace RFIDReaderPortal.Services
 
             _logger.LogInformation($"Inserting {dataToInsert.Count} RFID records");
 
-            await _apiService.PostRFIDRunningLogAsync(
+            // 👇 yahin se CHEST DATA aayega
+            return await _apiService.PostRFIDRunningLogAsync(
                 _accessToken, _userid, _recruitid, _deviceId,
                 _location, _eventName, _eventId, dataToInsert,
                 _sessionid, _ipaddress
