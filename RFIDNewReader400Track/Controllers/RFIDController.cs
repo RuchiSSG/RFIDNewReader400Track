@@ -306,12 +306,24 @@ namespace RFIDReaderPortal.Controllers
 
             var chestDataJson = await _tcpListenerService.InsertStoredRfidDataAsync();
 
+            var chestList = JsonConvert.DeserializeObject<List<ChestBarcodeDto>>(chestDataJson);
+
+            var rfidDataList = chestList.Select(x => new RfidData
+            {
+                TagId = x.RFID,
+                ChestNo = x.ChestNo,
+                Barcode = x.Barcode,
+                Timestamp = DateTime.Now
+            }).ToList();
+
             return Json(new
             {
                 success = true,
-                data = chestDataJson   // 👈 FINAL DATA
+                data = rfidDataList
             });
         }
+
+
 
 
         //[HttpPost]

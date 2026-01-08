@@ -331,32 +331,32 @@
                 $("th:nth-child(3), td:nth-child(3)").show();
             }
         }
-                if (start) {
-            // Hide Chest No and Barcode columns
-            toggleColumnVisibility(false);
+        //         if (start) {
+        //     // Hide Chest No and Barcode columns
+        //     toggleColumnVisibility(false);
 
-            // First clear data
-            $.ajax({
-                url: '@Url.Action("ClearData", "RFID")',
-                type: 'POST',
-                success: function (response) {
-                    if (response.success) {
-                        $('#rfidDataBody').empty();
-                        $('#debugInfo').text('Data cleared successfully. Starting RFID listener...');
-                        updateRfidData();
-                        $('#startButton').prop('disabled', true);
-                        $('#stopButton').prop('disabled', false);
-                        $('#clearButton').prop('disabled', true);
-                    } else {
-                        $('#debugInfo').text('Failed to clear data.');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error clearing data:', error);
-                    $('#debugInfo').text('Error clearing data: ' + error);
-                }
-            });
-        }
+        //     // First clear data
+        //     $.ajax({
+        //         url: '@Url.Action("ClearData", "RFID")',
+        //         type: 'POST',
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 $('#rfidDataBody').empty();
+        //                 $('#debugInfo').text('Data cleared successfully. Starting RFID listener...');
+        //                 updateRfidData();
+        //                 $('#startButton').prop('disabled', true);
+        //                 $('#stopButton').prop('disabled', false);
+        //                 $('#clearButton').prop('disabled', true);
+        //             } else {
+        //                 $('#debugInfo').text('Failed to clear data.');
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             console.error('Error clearing data:', error);
+        //             $('#debugInfo').text('Error clearing data: ' + error);
+        //         }
+        //     });
+        // }
 
               
                 function toggleListenerState(start) {
@@ -399,39 +399,62 @@
                         toggleListenerState(true);
                     }
                 });
+                        function updateTableWithChest(data) {
+            const $body = $('#rfidDataBody');
+            $body.empty();
 
-                    $('#stopButton').click(function () {
+            if (!data || data.length === 0) {
+                $body.append(`<tr><td colspan="6">No data available</td></tr>`);
+                return;
+            }
 
-            $.post('@Url.Action("Stop", "RFID")', function (response) {
+            let srNo = 1;
+
+            data.forEach(item => {
+                $body.append(`
+                    <tr>
+                        <td>${srNo}</td>
+                        <td>${item.rfid}</td>
+                        <td>${item.chestNo ?? ''}</td>
+                        <td>${item.barcode ?? ''}</td>
+                        <td>${item.lapCount ?? ''}</td>
+                        <td>${item.currentDateTime ?? ''}</td>
+                    </tr>
+                `);
+                srNo++;
+            });
+        }
+
+                  $('#stopButton').click(function () {
+
+            $.post('/RFID/Stop', function (response) {
 
                 if (response.success && response.data) {
 
-                    // Map server data to JS-friendly camelCase
-                    const finalData = response.data.map(x => ({
-                        rfid: x.RFID,
-                        chestNo: x.ChestNo,
-                        barcode: x.Barcode,
-                        lapCount: x.LapCount,
-                        currentDateTime: x.CurrentDateTime
-                    }));
+                    // 🔥 STRING → JSON
+                    const parsed = JSON.parse(response.data);
 
-                    // Optional: group by RFID to remove duplicates (last entry wins)
-                    const groupedData = {};
-                    finalData.forEach(item => {
-                        groupedData[item.rfid] = item;
+                    // 🔥 Actual array yaha hai
+                    const list = parsed.data;
+
+                    // 🔥 Remove duplicates (RFID + LapCount)
+                    const map = {};
+                    list.forEach(x => {
+                        const key = x.RFID + '_' + x.LapCount;
+                        if (!map[key]) {
+                            map[key] = x;
+                        }
                     });
 
-                    updateTableWithChest(Object.values(groupedData));
-                    toggleColumnVisibility(true);
-                    $('#debugInfo').text("Final data loaded");
-                }
-                else {
-                    $('#debugInfo').text("No data available");
-                }
+                    const finalData = Object.values(map);
 
-                toggleListenerState(false);
+                    updateTableWithChest(finalData);
+                    toggleColumnVisibility(true);
+                }
             });
         });
+
+
 
 
 
@@ -451,7 +474,7 @@
                 //     });
                 // });
 
-                        function toggleColumnVisibility(showChestBarcode) {
+                   function toggleColumnVisibility(showChestBarcode) {
             if (showChestBarcode) {
                 $("th:nth-child(3), td:nth-child(3)").show(); // Chest No
                 $("th:nth-child(4), td:nth-child(4)").show(); // Barcode
@@ -460,6 +483,7 @@
                 $("th:nth-child(4), td:nth-child(4)").hide();
             }
         }
+
 
 
                 $('#clearButton').click(function () {
