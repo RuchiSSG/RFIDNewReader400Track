@@ -80,7 +80,7 @@ namespace RFIDReaderPortal.Services
         //        new AuthenticationHeaderValue("Bearer", accessToken);
 
         //    var response = await _httpClient.SendAsync(request);
-             
+
         //        throw new Exception("Failed to fetch chest barcode data.");
 
         //    var json = await response.Content.ReadAsStringAsync();
@@ -214,7 +214,7 @@ namespace RFIDReaderPortal.Services
         //    }
         //}
 
-        public async Task<string?> PostRFIDRunningLogAsync(
+        public async Task<List<ChestBarcodeDto>> PostRFIDRunningLogAsync(
     string accessToken, string userid, string recruitid, string DeviceId,
     string Location, string eventName, string eventId, List<RfidData> rfidDataList,
     string sessionid, string ipaddress)
@@ -267,7 +267,13 @@ namespace RFIDReaderPortal.Services
                 var response1 = await _httpClient.GetAsync(url1);
 
                 if (response1.IsSuccessStatusCode)
-                    return await response1.Content.ReadAsStringAsync();
+                {
+                    var json = await response1.Content.ReadAsStringAsync();
+
+                    var Result = JsonConvert.DeserializeObject<GetChestApiResponse>(json);
+
+                    return Result?.data ?? new List<ChestBarcodeDto>();
+                }
 
                 return null;
             }

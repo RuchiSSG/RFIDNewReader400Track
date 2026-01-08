@@ -71,70 +71,15 @@
         <thead>
             <tr>
                 <th>Sr. No.</th>
-                <th>Tag ID</th>
+                <th>RFID</th>
                 <th>Chest No</th>
-                 <th>Barcode</th>
+                <th>Barcode</th>
                 <th>Lap Count</th>
-                <th>Timestamp</th>
+                <th>Time</th>
             </tr>
         </thead>
+        <tbody id="rfidDataBody"></tbody>
 
-        <tbody id="rfidDataBody">
-            @*  @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
-            {
-                // Group by TagId for count + latest timestamp
-                var grouped = Model.RfidDataArray
-                .GroupBy(x => x.TagId)
-                .Select(g => new
-                {
-                    TagId = g.Key,
-                    Count = g.Count(),
-                    Timestamp = g.OrderByDescending(t => t.Timestamp).First().Timestamp
-                });
-
-                foreach (var item in grouped)
-                {
-                    <tr>
-                        <td>@item.TagId</td>
-                        <td>@item.Timestamp.ToString("HH:mm:ss:fff")</td>
-                        <td>@item.Count</td>
-                    </tr>
-                }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="3">No data available</td>
-                </tr>
-            } *@
-            @*        @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
-            {
-                var grouped = Model.RfidDataArray
-                .GroupBy(x => x.TagId)
-                .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Timestamp).ToList());
-
-                foreach (var entry in grouped)
-                {
-                    var tagId = entry.Key;
-                    var times = entry.Value.Select(t => t.Timestamp.ToString("HH:mm:ss:fff")).ToList();
-                    var lapCount = times.Count;
-
-                    <tr>
-                        <td>@tagId</td>
-                        <td>@lapCount</td>
-                        <td>
-                            @foreach (var t in times)
-                            {
-                                <div>@t</div>
-                            }
-                        </td>
-                    </tr>
-                }
-            }
-            else
-            {
-                <tr><td colspan="3">No data available</td></tr>
-            } *@
             @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
             {
                 var grouped = Model.RfidDataArray
@@ -220,6 +165,8 @@
             "positionClass": "toast-top-right",
             "timeOut": "5000"
         };
+                let isRunning = false;
+        let updateInterval = null;
 
         // Success message after login
         @if (TempData["SuccessMessage"] != null)
@@ -312,14 +259,17 @@
                     timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
                 }
 
-                $body.append(`
-                    <tr>
-                        <td>${srNo}</td>
-                        <td>${item.tagId}</td>
-                        <td>${lapCount}</td>
-                        <td>${timeHtml}</td>
-                    </tr>
-                `);
+                      $body.append(`
+        <tr>
+            <td>${srNo}</td>             // Sr. No.
+            <td>${item.tagId}</td>       // RFID
+            <td>${item.ChestNo || ''}</td>   // Chest No
+            <td>${item.Barcode || ''}</td>   // Barcode
+            <td>${lapCount}</td>         // Lap Count
+            <td>${timeHtml}</td>         // Time
+        </tr>
+        `);
+
 
                 srNo++;
             });
@@ -393,66 +343,38 @@
                         previousTagIds = [];
                     }
                 }
+        $('#startButton').click(function () {
+            isRunning = true;
+            updateRfidData();
 
-                $('#startButton').click(function () {
-                    if (!isRunning) {
-                        toggleListenerState(true);
-                    }
-                });
-                        function updateTableWithChest(data) {
-            const $body = $('#rfidDataBody');
-            $body.empty();
+            $('#startButton').prop('disabled', true);
+            $('#stopButton').prop('disabled', false);
+        });
 
-            if (!data || data.length === 0) {
-                $body.append(`<tr><td colspan="6">No data available</td></tr>`);
-                return;
-            }
 
-            let srNo = 1;
-
-            data.forEach(item => {
-                $body.append(`
-                    <tr>
-                        <td>${srNo}</td>
-                        <td>${item.rfid}</td>
-                        <td>${item.chestNo ?? ''}</td>
-                        <td>${item.barcode ?? ''}</td>
-                        <td>${item.lapCount ?? ''}</td>
-                        <td>${item.currentDateTime ?? ''}</td>
-                    </tr>
-                `);
-                srNo++;
-            });
-        }
-
-                  $('#stopButton').click(function () {
-
+          $('#stopButton').click(function () {
             $.post('/RFID/Stop', function (response) {
-
                 if (response.success && response.data) {
 
-                    // 🔥 STRING → JSON
-                    const parsed = JSON.parse(response.data);
+                    const finalData = response.data; // Ye Stop() ka result
 
-                    // 🔥 Actual array yaha hai
-                    const list = parsed.data;
-
-                    // 🔥 Remove duplicates (RFID + LapCount)
+                    // Remove duplicates agar chahiye
                     const map = {};
-                    list.forEach(x => {
+                    finalData.forEach(x => {
                         const key = x.RFID + '_' + x.LapCount;
                         if (!map[key]) {
                             map[key] = x;
                         }
                     });
 
-                    const finalData = Object.values(map);
+                    const filteredData = Object.values(map);
 
-                    updateTableWithChest(finalData);
-                    toggleColumnVisibility(true);
+                    updateTableWithChest(filteredData); // ✅ Show final data
                 }
             });
         });
+
+
 
 
 
@@ -474,16 +396,52 @@
                 //     });
                 // });
 
-                   function toggleColumnVisibility(showChestBarcode) {
-            if (showChestBarcode) {
-                $("th:nth-child(3), td:nth-child(3)").show(); // Chest No
-                $("th:nth-child(4), td:nth-child(4)").show(); // Barcode
-            } else {
-                $("th:nth-child(3), td:nth-child(3)").hide();
-                $("th:nth-child(4), td:nth-child(4)").hide();
+        //            function toggleColumnVisibility(showChestBarcode) {
+        //     if (showChestBarcode) {
+        //         $("th:nth-child(3), td:nth-child(3)").show(); // Chest No
+        //         $("th:nth-child(4), td:nth-child(4)").show(); // Barcode
+        //     } else {
+        //         $("th:nth-child(3), td:nth-child(3)").hide();
+        //         $("th:nth-child(4), td:nth-child(4)").hide();
+        //     }
+        // }
+                function toggleColumnVisibility(show) {
+            if (show) {
+                $("th, td").show();
             }
         }
 
+                     function updateTableWithChest(data) {
+            const $body = $('#rfidDataBody');
+            $body.empty();
+
+            if (!data || data.length === 0) {
+                $body.append(`<tr><td colspan="6">No data available</td></tr>`);
+                return;
+            }
+
+            let srNo = 1;
+
+            data.forEach(item => {
+                const lapCount = item.lapTimes ? item.lapTimes.length : item.LapCount || '';
+                const timeHtml = item.lapTimes
+                    ? item.lapTimes.map(t => `<div>${t}</div>`).join('')
+                    : item.CurrentDateTime || '';
+
+                $body.append(`
+                    <tr>
+                        <td>${srNo}</td>
+                        <td>${item.tagId || item.RFID}</td>
+                        <td>${item.chestNo || item.ChestNo || ''}</td>
+                        <td>${item.barcode || item.Barcode || ''}</td>
+                        <td>${lapCount}</td>
+                        <td>${timeHtml}</td>
+                    </tr>
+                `);
+
+                srNo++;
+            });
+        }
 
 
                 $('#clearButton').click(function () {

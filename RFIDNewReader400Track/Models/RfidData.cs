@@ -32,10 +32,18 @@
         public string? RFID { get; set; }
         public string? ChestNo { get; set; }
         public string? Barcode { get; set; }
+        public string? CurrentDateTime { get; set; }
+        public string? Position { get; set; }
     }
     public class ChestInfo
     {
         public string ChestNo { get; set; }
         public string Barcode { get; set; }
     }
+    public class GetChestApiResponse
+    {
+        public Outcome outcome { get; set; }
+        public List<ChestBarcodeDto> data { get; set; }
+    }
+
 }

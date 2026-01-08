@@ -329,7 +329,7 @@ namespace RFIDReaderPortal.Services
                     {
                         int maxLaps = _eventName == "1600 Meter Running" ? 5 :
                             _eventName == "800 Meter Running" ? 3 : 1;
-                        TimeSpan minGap = TimeSpan.FromSeconds(30);
+                        TimeSpan minGap = TimeSpan.FromSeconds(20);
 
                         DateTime lastLapTime = rfidData.LapTimes.Last();
 
@@ -479,7 +479,7 @@ namespace RFIDReaderPortal.Services
         //        _sessionid, _ipaddress
         //    );
         //}
-        public async Task<string?> InsertStoredRfidDataAsync()
+        public async Task<List<ChestBarcodeDto>> InsertStoredRfidDataAsync()
         {
             List<RfidData> dataToInsert;
 
@@ -488,7 +488,7 @@ namespace RFIDReaderPortal.Services
                 if (_storedRfidData.Count == 0)
                 {
                     _logger.LogInformation("No stored RFID data to insert");
-                    return null;
+                    return new List<ChestBarcodeDto>();
                 }
 
                 dataToInsert = new List<RfidData>(_storedRfidData);
@@ -497,13 +497,13 @@ namespace RFIDReaderPortal.Services
 
             _logger.LogInformation($"Inserting {dataToInsert.Count} RFID records");
 
-            // 👇 yahin se CHEST DATA aayega
             return await _apiService.PostRFIDRunningLogAsync(
                 _accessToken, _userid, _recruitid, _deviceId,
                 _location, _eventName, _eventId, dataToInsert,
                 _sessionid, _ipaddress
             );
         }
+
 
         public void ClearData()
         {
