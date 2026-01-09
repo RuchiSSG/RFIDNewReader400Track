@@ -329,7 +329,7 @@ namespace RFIDReaderPortal.Services
                     {
                         int maxLaps = _eventName == "1600 Meter Running" ? 5 :
                             _eventName == "800 Meter Running" ? 3 : 1;
-                        TimeSpan minGap = TimeSpan.FromSeconds(20);
+                        TimeSpan minGap = TimeSpan.FromSeconds(15);
 
                         DateTime lastLapTime = rfidData.LapTimes.Last();
 
