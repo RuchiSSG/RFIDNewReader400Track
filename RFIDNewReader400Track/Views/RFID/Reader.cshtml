@@ -268,7 +268,7 @@
                         },
                         complete: function () {
                             if (isRunning) {
-                                updateInterval = setTimeout(updateRfidData, 5000);
+                                updateInterval = setTimeout(updateRfidData, 150);
                             }
                         }
                     });
@@ -285,10 +285,11 @@
             const eventName = $("#eventName").val();
 
             const grouped = {};
-            data.forEach(item => {
-                grouped[item.tagId] = item; // always latest
-            });
-
+                   data.forEach(item => {
+            if (item.lapTimes && item.lapTimes.length > 0) {
+                grouped[item.tagId] = item;
+            }
+        });
             let srNo = 1;
             Object.values(grouped).forEach(item => {
 
