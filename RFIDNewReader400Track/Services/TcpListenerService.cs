@@ -18,7 +18,7 @@ namespace RFIDReaderPortal.Services
         private int _hexdataCount;
         private readonly object _lock = new object();
         private readonly object _hexLock = new object();
-
+        private volatile bool _raceStarted = false;
         private string _accessToken;
         private string _userid;
         private string _recruitid;
@@ -110,6 +110,19 @@ namespace RFIDReaderPortal.Services
                 $"TCP Listener stopped. Snapshot count = {_snapshotData.Count}");
         }
 
+        public void StartRace()
+        {
+            _raceStarted = true;
+            _lastProcessed.Clear();   // ✔ correct
+            _logger.LogInformation("Race officially STARTED");
+        }
+
+
+        public void StopRace()
+        {
+            _raceStarted = false;
+            _logger.LogInformation("Race STOPPED");
+        }
 
 
 
@@ -305,6 +318,9 @@ namespace RFIDReaderPortal.Services
 
         private void ProcessTag(string epc, DateTime timestamp)
         {
+            // 1️⃣ Race start hua hai ya nahi
+            //if (!_raceStarted)
+            //    return;
             // ✅ PER-TAG DUPLICATE PREVENTION (FIRST LINE)
             var lastTime = _lastProcessed.GetOrAdd(epc, DateTime.MinValue);
 
@@ -313,19 +329,17 @@ namespace RFIDReaderPortal.Services
 
             _lastProcessed[epc] = timestamp;
             // Get or create tag entry (thread-safe)
-            bool isNewTag = false;
+            bool isNewTag = !_receivedDataDict.ContainsKey(epc);
 
             var rfidData = _receivedDataDict.GetOrAdd(epc, _ =>
-            {
-                isNewTag = true;
-                return new RfidData
+                new RfidData
                 {
                     TagId = epc,
                     Timestamp = timestamp,
-                    LapTimes = new List<DateTime> { timestamp }, // ✅ FIRST TIME STORED
+                    LapTimes = new List<DateTime> { timestamp },
                     IsCompleted = false
-                };
-            });
+                });
+
 
 
             // 🔒 HARD STOP: already finished race
@@ -356,16 +370,26 @@ namespace RFIDReaderPortal.Services
             {
                 if (isNewTag)
                 {
-                    // 🔥 First scan itself is FINAL time
                     rfidData.IsCompleted = true;
-                    shouldStore = true;
+
+                    lock (_storedRfidData)
+                    {
+                        _storedRfidData.Add(new RfidData
+                        {
+                            TagId = rfidData.TagId,
+                            Timestamp = timestamp,
+                            LapTimes = new List<DateTime> { timestamp },
+                            IsCompleted = true
+                        });
+                    }
 
                     _logger.LogInformation(
-                        $"Final {_eventName} time captured for {epc} at {timestamp:HH:mm:ss:fff}");
+                        $"Final {_eventName} time captured for {epc}");
                 }
 
-                return; // Ignore further scans
+                return;
             }
+
 
             // 🟢 MULTI-LAP EVENTS (800m / 1600m)
             int maxLaps =

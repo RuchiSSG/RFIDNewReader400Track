@@ -179,7 +179,7 @@ namespace RFIDReaderPortal.Controllers
         }
 
 
-      
+
         [HttpPost]
         [Consumes("application/json")]
         public async Task<IActionResult> SubmitButton([FromBody] DeviceConfigurationDto formData)
@@ -192,6 +192,9 @@ namespace RFIDReaderPortal.Controllers
 
                 if (string.IsNullOrEmpty(accessToken))
                     return BadRequest("Access token is missing.");
+
+                // 🔴 STEP 1: CLEAR OLD RACE COOKIES
+                ClearRaceCookies();
 
                 if (formData == null ||
                     string.IsNullOrEmpty(formData.DeviceId) ||
@@ -206,15 +209,19 @@ namespace RFIDReaderPortal.Controllers
                 var response = await _apiService.InsertDeviceConfigurationAsync(
                     accessToken, formData, sesionid, ipaddress);
 
-                if (!string.IsNullOrEmpty(response?.outcome?.tokens))
+                string token = response?.outcome?.tokens?.ToString();
+
+                if (!string.IsNullOrEmpty(token))
                 {
-                    Response.Cookies.Append("accesstoken", response.outcome.tokens);
+                    Response.Cookies.Append("accesstoken", token);
                 }
 
-                // ✅ CORRECT COOKIE MAPPING
+
+                // 🔴 STEP 2: SET NEW RACE COOKIES
                 Response.Cookies.Append("EventId", formData.EventId);
-                Response.Cookies.Append("EventName", formData.eventName); // IMPORTANT
+                Response.Cookies.Append("EventName", formData.eventName);
                 Response.Cookies.Append("Location", formData.Location);
+                Response.Cookies.Append("DeviceId", formData.DeviceId);
 
                 return Json(new { success = true, redirectUrl = Url.Action("Reader", "RFID") });
             }
@@ -223,6 +230,7 @@ namespace RFIDReaderPortal.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
 
         [HttpPost]
@@ -325,6 +333,11 @@ namespace RFIDReaderPortal.Controllers
                 if (!_tcpListenerService.IsRunning)
                 {
                     _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, eventId, sesionid, ipaddress);
+                    if (string.IsNullOrEmpty(eventId) || string.IsNullOrEmpty(deviceId))
+                    {
+                        return RedirectToAction("Configuration");
+                    }
+
                     _tcpListenerService.Start();
                 }
 
@@ -485,6 +498,24 @@ namespace RFIDReaderPortal.Controllers
                 hexString = hexStringArray
             });
         }
+        private void ClearRaceCookies()
+        {
+            string[] cookiesToClear =
+            {
+        "EventId",
+        "EventName",
+        "Location",
+        "DeviceId"
+    };
+
+            foreach (var cookie in cookiesToClear)
+            {
+                if (Request.Cookies[cookie] != null)
+                {
+                    Response.Cookies.Delete(cookie);
+                }
+            }
+        }
 
 
 
@@ -520,7 +551,7 @@ namespace RFIDReaderPortal.Controllers
                 _tcpListenerService.Stop();
                 _latestRfidData.Clear();
                 _lastClearTime = DateTime.MinValue;
-
+                ClearRaceCookies();
                 return Json(new { success = true, message = "RFID records deleted successfully and listener reset." });
                 //}
                 //else
