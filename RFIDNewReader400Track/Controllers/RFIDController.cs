@@ -1,19 +1,20 @@
-﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RFIDReaderPortal.Models;
 using RFIDReaderPortal.Services;
-using System.Text;
 using System;
-using System.Net.Http;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Reflection;
-using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Logging;
 using System.Collections;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Diagnostics;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
 
 namespace RFIDReaderPortal.Controllers
@@ -55,15 +56,21 @@ namespace RFIDReaderPortal.Controllers
         public async Task<IActionResult> Configuration()
         {
             try
+            
             {
                 var httpClient = new HttpClient();
                 ApiService apiservice = new ApiService(httpClient, _configuration, _logger);
+                string categoryValue = "537f894d-abae-4dab-bd9e-c386cffd12ef";
                 string accessToken = Request.Cookies["accesstoken"];
                 string userid = Request.Cookies["UserId"];
                 string recruitid = Request.Cookies["recruitid"];
                 string deviceid = Request.Cookies["DeviceId"];
                 string ipaddress = Request.Cookies["IpAddress"];
                 string sesionid = Request.Cookies["sessionid"];
+                string eventid = Request.Cookies["EventId"];
+                string category = categoryValue;
+
+
 
                 dynamic events = await apiservice.GetAllRecruitEventsAsync(accessToken, userid, recruitid, sesionid, ipaddress);
                 dynamic responsemodel = events.outcome;
@@ -162,10 +169,32 @@ namespace RFIDReaderPortal.Controllers
                 }
                 else
                 {
+                    // 🔹 GET GROUPS (LOGIN KE BAAD)
+                    dynamic groupResponse = await _apiService.GetAllGroupsAsync(
+                        accessToken,
+                        userid,
+                        recruitid,
+                       eventid,
+                       category,
+                        sesionid,
+                        ipaddress
+                    );
+
+                    JArray groups = new JArray();
+                    if (groupResponse?.data != null)
+                    {
+                        groups = (JArray)groupResponse.data;
+                    }
+
                     var viewModel1 = new RFIDViewModel
                     {
-                        IPDataResponse = ipDataResponse
+                        IPDataResponse = ipDataResponse,
+                        Groups = groups   // ✅ GROUP DROPDOWN DATA
                     };
+                    //var viewModel1 = new RFIDViewModel
+                    //{
+                    //    IPDataResponse = ipDataResponse
+                    //};
                     return View("Reader", viewModel1);
                 }
             }
@@ -322,34 +351,34 @@ namespace RFIDReaderPortal.Controllers
         //        data = rfidDataList
         //    });
         //}
-        [HttpPost]
-        public async Task<IActionResult> Stop()
-        {
-            _tcpListenerService.Stop();
-
-            var chestData = await _tcpListenerService.InsertStoredRfidDataAsync();
-
-            return Json(new
-            {
-                success = true,
-                message = "RFID listener stopped and data inserted successfully.",
-                data = chestData
-            });
-        }
-
-
-
-
-
         //[HttpPost]
         //public async Task<IActionResult> Stop()
         //{
-        //    // Stop the listener so no new data comes in
         //    _tcpListenerService.Stop();
-        //    await _tcpListenerService.InsertStoredRfidDataAsync(); // Call method to insert data
 
-        //    return Json(new { success = true, message = "RFID listener stopped and data inserted successfully." });
+        //    var chestData = await _tcpListenerService.InsertStoredRfidDataAsync();
+
+        //    return Json(new
+        //    {
+        //        success = true,
+        //        message = "RFID listener stopped and data inserted successfully.",
+        //        data = chestData
+        //    });
         //}
+
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> Stop()
+        {
+            // Stop the listener so no new data comes in
+            _tcpListenerService.Stop();
+            await _tcpListenerService.InsertStoredRfidDataAsync(); // Call method to insert data
+
+            return Json(new { success = true, message = "RFID listener stopped and data inserted successfully." });
+        }
 
         public async Task<IActionResult> Reader()
         {
@@ -360,6 +389,7 @@ namespace RFIDReaderPortal.Controllers
                 string recruitid = Request.Cookies["recruitid"];
                 string deviceId = Request.Cookies["DeviceId"];
                 string location = Request.Cookies["Location"];
+                string category = Request.Cookies["Category"];
                 string eventName = Request.Cookies["EventName"];
                 string eventId = Request.Cookies["EventId"];
                 string ipaddress = Request.Cookies["IpAddress"];
@@ -374,9 +404,13 @@ namespace RFIDReaderPortal.Controllers
                 ViewBag.IsRunning = _tcpListenerService.IsRunning;
 
                 var rfidDataArray = _tcpListenerService.GetReceivedData();
-
                 dynamic getAsyncResponse = await _apiService.GetAsync(accessToken, userid, deviceId, sesionid, ipaddress);
+                // 🔹 GET GROUP LIST FOR DROPDOWN
+                dynamic groupResponse = await _apiService.GetAllGroupsAsync(accessToken, userid, recruitid,eventId,category, sesionid, ipaddress);
 
+                JArray groups = new JArray();
+                if (groupResponse?.data != null)
+                    groups = (JArray)groupResponse.data;
                 // Handle token refresh if provided
                 if (getAsyncResponse?.outcome?.tokens != null)
                 {
@@ -415,6 +449,7 @@ namespace RFIDReaderPortal.Controllers
                     RfidDataArray = rfidDataArray,
                     IsRunning = _tcpListenerService.IsRunning,
                     IPDataResponse = ipDataResponse,
+                    Groups = groups,
                     eventname = eventsList // Now correctly typed as IEnumerable<RecruitmentEventDto>
                 };
 
@@ -508,8 +543,8 @@ namespace RFIDReaderPortal.Controllers
                         tagId = item.TagId,
 
                         // ✅ ADD THESE
-                        chestNo = item.ChestNo,      // must exist in item
-                        barcode = item.Barcode,      // must exist in item
+                        //chestNo = item.ChestNo,      // must exist in item
+                        //barcode = item.Barcode,      // must exist in item
 
                         lapTimes = item.LapTimes
                             .Select(t => t.ToString("HH:mm:ss:fff"))

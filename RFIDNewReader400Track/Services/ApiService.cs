@@ -153,6 +153,23 @@ namespace RFIDReaderPortal.Services
             }
             throw new Exception("Failed to fetch recruitment events.");
         }
+        public async Task<object> GetAllGroupsAsync(string accessToken, string userid, string recruitid,string eventId,string category, string sessionid, string ipaddress)
+        {
+            var url = $"{_baseUrl}Candidate/GetGroup?userid={userid}&recruitid={recruitid}&eventid={eventId}&category={category}&sessionid={sessionid}&ipaddress={ipaddress}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                dynamic content = await response.Content.ReadAsStringAsync();
+                dynamic desobj = JsonConvert.DeserializeObject(content);
+                return desobj;
+            }
+            throw new Exception("Failed to fetch recruitment events.");
+        }
         //public async Task<bool> PostRFIDRunningLogAsync(
         //    string accessToken, string userid, string recruitid, string DeviceId,
         //    string Location, string eventName, string eventId, List<RfidData> rfidDataList,
@@ -214,7 +231,7 @@ namespace RFIDReaderPortal.Services
         //    }
         //}
 
-        public async Task<List<ChestBarcodeDto>> PostRFIDRunningLogAsync(
+        public async Task<bool> PostRFIDRunningLogAsync(
     string accessToken, string userid, string recruitid, string DeviceId,
     string Location, string eventName, string eventId, List<RfidData> rfidDataList,
     string sessionid, string ipaddress)
@@ -258,29 +275,29 @@ namespace RFIDReaderPortal.Services
 
                 var response = await _httpClient.SendAsync(request);
 
-                if (!response.IsSuccessStatusCode)
-                    return null;
+              //  if (!response.IsSuccessStatusCode)
+                    return response.IsSuccessStatusCode;
 
                 // ✅ INSERT KE BAAD CHEST DATA LAO
-                var url1 = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
+                //var url1 = $"{_baseUrl}RFIDChestNoMapping/GetChestno?userid={userid}&recruitid={recruitid}&eventName={eventName}&eventId={eventId}&sessionid={sessionid}&ipaddress={ipaddress}";
 
-                var response1 = await _httpClient.GetAsync(url1);
+                //var response1 = await _httpClient.GetAsync(url1);
 
-                if (response1.IsSuccessStatusCode)
-                {
-                    var json = await response1.Content.ReadAsStringAsync();
+                //if (response1.IsSuccessStatusCode)
+                //{
+                //    var json = await response1.Content.ReadAsStringAsync();
 
-                    var Result = JsonConvert.DeserializeObject<GetChestApiResponse>(json);
+                //    var Result = JsonConvert.DeserializeObject<GetChestApiResponse>(json);
 
-                    return Result?.data ?? new List<ChestBarcodeDto>();
-                }
+                //    return Result?.data ?? new List<ChestBarcodeDto>();
+                //}
 
-                return null;
+                //return null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while inserting RFID data");
-                return null;
+                return false;
             }
         }
 

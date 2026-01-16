@@ -1,4 +1,5 @@
-﻿using RFIDReaderPortal.Services;
+﻿using Newtonsoft.Json.Linq;
+using RFIDReaderPortal.Services;
 using System.Xml.Linq;
 
 namespace RFIDReaderPortal.Models
@@ -16,7 +17,7 @@ namespace RFIDReaderPortal.Models
         public List<string> ReaderIPs { get; set; }
         public string? StatusMessage { get; set; }
 
-
+        public JArray Groups { get; set; }
         public string? UserId { get; set; }
 
        // public string EventName { get; set; }
