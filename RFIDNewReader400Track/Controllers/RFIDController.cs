@@ -55,6 +55,7 @@ namespace RFIDReaderPortal.Controllers
         public async Task<IActionResult> Configuration()
         {
             try
+            
             {
                 var httpClient = new HttpClient();
                 ApiService apiservice = new ApiService(httpClient, _configuration, _logger);
@@ -139,15 +140,16 @@ namespace RFIDReaderPortal.Controllers
 
                 foreach (var item in ipDataResponse)
                 {
-                    //if (!string.IsNullOrEmpty(item.EventId))
-                    //    Response.Cookies.Append("EventId", item.eventName);
                     if (!string.IsNullOrEmpty(item.Location))
                         Response.Cookies.Append("Location", item.Location);
+
                     if (!string.IsNullOrEmpty(item.eventName))
                         Response.Cookies.Append("EventName", item.eventName);
-                    if (!string.IsNullOrEmpty(item.eventName))
+
+                    if (!string.IsNullOrEmpty(item.EventId))
                         Response.Cookies.Append("EventId", item.EventId);
                 }
+
 
                 if (ipDataResponse.Count == 0)
                 {
@@ -177,8 +179,9 @@ namespace RFIDReaderPortal.Controllers
         }
 
 
+      
         [HttpPost]
-        [Consumes("application/json")] // Expecting JSON content
+        [Consumes("application/json")]
         public async Task<IActionResult> SubmitButton([FromBody] DeviceConfigurationDto formData)
         {
             try
@@ -188,11 +191,7 @@ namespace RFIDReaderPortal.Controllers
                 string sesionid = Request.Cookies["sessionid"];
 
                 if (string.IsNullOrEmpty(accessToken))
-                {
                     return BadRequest("Access token is missing.");
-                }
-
-                ViewData["AccessToken"] = accessToken;
 
                 if (formData == null ||
                     string.IsNullOrEmpty(formData.DeviceId) ||
@@ -204,28 +203,27 @@ namespace RFIDReaderPortal.Controllers
                     return BadRequest("All input fields are required.");
                 }
 
-                dynamic InsertRFID = await _apiService.InsertDeviceConfigurationAsync(accessToken, formData, sesionid, ipaddress);
+                var response = await _apiService.InsertDeviceConfigurationAsync(
+                    accessToken, formData, sesionid, ipaddress);
 
-                string newTokenFromGetAsync = InsertRFID?.outcome?.tokens?.ToString();
-                if (!string.IsNullOrEmpty(newTokenFromGetAsync))
+                if (!string.IsNullOrEmpty(response?.outcome?.tokens))
                 {
-                    ViewBag.Tokens = newTokenFromGetAsync;
-                    Response.Cookies.Append("accesstoken", newTokenFromGetAsync);
-                    accessToken = newTokenFromGetAsync;
+                    Response.Cookies.Append("accesstoken", response.outcome.tokens);
                 }
 
-                string Eventid = formData.EventId;
-                string Location = formData.Location;
-                Response.Cookies.Append("EventName", Eventid);
-                Response.Cookies.Append("Location", Location);
+                // ✅ CORRECT COOKIE MAPPING
+                Response.Cookies.Append("EventId", formData.EventId);
+                Response.Cookies.Append("EventName", formData.eventName); // IMPORTANT
+                Response.Cookies.Append("Location", formData.Location);
+
                 return Json(new { success = true, redirectUrl = Url.Action("Reader", "RFID") });
             }
-            catch (Exception ex)
+            catch
             {
-              //  _logger.LogError(ex, "Error occurred in SubmitButton");
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpPost]
         public async Task<IActionResult> RFID(EventModel model)
