@@ -273,63 +273,117 @@
                         }
                     });
                 }
-                        function updateTable(data) {
-            const $body = $('#rfidDataBody');
-            $body.empty();
+              function updateTable(data) {
+    const $body = $('#rfidDataBody');
+    const eventName = $("#eventName").val();
 
-            if (!data || data.length === 0) {
-                $body.append(`<tr><td colspan="4">No data available</td></tr>`);
-                return;
-            }
+    // ❌ Empty data → kuch bhi mat karo (first poll safe)
+    if (!data || data.length === 0) {
+        return;
+    }
 
-            const eventName = $("#eventName").val();
+    $body.empty();
+    let srNo = 1;
 
-            const grouped = {};
-                   data.forEach(item => {
-            if (item.lapTimes && item.lapTimes.length > 0) {
-                grouped[item.tagId] = item;
-            }
-        });
-            let srNo = 1;
-            Object.values(grouped).forEach(item => {
+    data.forEach(item => {
 
-                let lapCount = item.lapTimes.length;
-                let timeHtml = "";
+        let lapTimes = item.lapTimes || [];
+        let lapCount = lapTimes.length;
+        let timeHtml = "";
 
-                if (eventName == "100 Meter Running") {
-                    // Show only latest time for 100m
-                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
-                    lapCount = ""; // Hide lap count
-                }
-                 if (eventName == "500 meter Running") {
-                    // Show only latest time for 100m
-                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
-                    lapCount = ""; // Hide lap count
-                }
-               else {
-                    // Show each lap with "Lap x: timestamp"
-                    timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
-                }
-
-                $body.append(`
-                    <tr>
-                        <td>${srNo}</td>
-                        <td>${item.tagId}</td>
-                        <td>${lapCount}</td>
-                        <td>${timeHtml}</td>
-                    </tr>
-                `);
-
-                srNo++;
-            });
-
-            // Hide lap count column for 100m
-            if (eventName === "100 Meter Running") {
-                $("th:nth-child(3), td:nth-child(3)").hide();
-            } else {
-                $("th:nth-child(3), td:nth-child(3)").show();
-            }
+        // 🔹 FIRST SCAN (no lap time yet)
+        if (lapCount === 0) {
+            timeHtml = `<div class="text-muted fw-bold">Started</div>`;
         }
+        // 🔹 100m / 500m → only latest time
+        else if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
+            timeHtml = `<div>${lapTimes[lapCount - 1]}</div>`;
+        }
+        // 🔹 Multi-lap events
+        else {
+            timeHtml = lapTimes
+                .map((t, i) => `<div>Lap ${i + 1}: ${t}</div>`)
+                .join('');
+        }
+
+        $body.append(`
+            <tr>
+                <td>${srNo}</td>
+                <td>${item.tagId}</td>
+                <td>${(eventName === "100 Meter Running" || eventName === "500 meter Running") ? "" : lapCount}</td>
+                <td>${timeHtml}</td>
+            </tr>
+        `);
+
+        srNo++;
+    });
+
+    // 🔹 Hide lap column for 100m / 500m
+    if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
+        $("th:nth-child(3), td:nth-child(3)").hide();
+    } else {
+        $("th:nth-child(3), td:nth-child(3)").show();
+    }
+}
+
+
+        //                 function updateTable(data) {
+        //     const $body = $('#rfidDataBody');
+        //     $body.empty();
+
+        //     if (!data || data.length === 0) {
+        //         $body.append(`<tr><td colspan="4">No data available</td></tr>`);
+        //         return;
+        //     }
+
+        //     const eventName = $("#eventName").val();
+
+        //     const grouped = {};
+        //            data.forEach(item => {
+        //     if (item.lapTimes && item.lapTimes.length > 0) {
+        //         grouped[item.tagId] = item;
+        //     }
+        // });
+        //     let srNo = 1;
+        //     Object.values(grouped).forEach(item => {
+
+        //         let lapCount = item.lapTimes.length;
+        //         let timeHtml = "";
+
+        //         if (eventName == "100 Meter Running") {
+        //             // Show only latest time for 100m
+        //             timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+        //             lapCount = ""; // Hide lap count
+        //         }
+        //          if (eventName == "500 meter Running") {
+        //             // Show only latest time for 100m
+        //             timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+        //             lapCount = ""; // Hide lap count
+        //         }
+        //        else {
+        //             // Show each lap with "Lap x: timestamp"
+        //             timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
+        //         }
+
+        //         $body.append(`
+        //             <tr>
+        //                 <td>${srNo}</td>
+        //                 <td>${item.tagId}</td>
+        //                 <td>${lapCount}</td>
+        //                 <td>${timeHtml}</td>
+        //             </tr>
+        //         `);
+
+        //         srNo++;
+        //     });
+
+        //     // Hide lap count column for 100m
+        //     if (eventName === "100 Meter Running") {
+        //         $("th:nth-child(3), td:nth-child(3)").hide();
+        //     } else {
+        //         $("th:nth-child(3), td:nth-child(3)").show();
+        //     }
+        // }
               
                 function toggleListenerState(start) {
                     isRunning = start;
