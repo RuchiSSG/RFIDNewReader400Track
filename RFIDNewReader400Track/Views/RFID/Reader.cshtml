@@ -71,15 +71,68 @@
         <thead>
             <tr>
                 <th>Sr. No.</th>
-                <th>RFID</th>
-                <th>Chest No</th>
-                <th>Barcode</th>
+                <th>Tag ID</th>
                 <th>Lap Count</th>
-                <th>Time</th>
+                <th>Timestamp</th>
             </tr>
         </thead>
-        <tbody id="rfidDataBody"></tbody>
 
+        <tbody id="rfidDataBody">
+            @*  @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                // Group by TagId for count + latest timestamp
+                var grouped = Model.RfidDataArray
+                .GroupBy(x => x.TagId)
+                .Select(g => new
+                {
+                    TagId = g.Key,
+                    Count = g.Count(),
+                    Timestamp = g.OrderByDescending(t => t.Timestamp).First().Timestamp
+                });
+
+                foreach (var item in grouped)
+                {
+                    <tr>
+                        <td>@item.TagId</td>
+                        <td>@item.Timestamp.ToString("HH:mm:ss:fff")</td>
+                        <td>@item.Count</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3">No data available</td>
+                </tr>
+            } *@
+            @*        @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
+            {
+                var grouped = Model.RfidDataArray
+                .GroupBy(x => x.TagId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Timestamp).ToList());
+
+                foreach (var entry in grouped)
+                {
+                    var tagId = entry.Key;
+                    var times = entry.Value.Select(t => t.Timestamp.ToString("HH:mm:ss:fff")).ToList();
+                    var lapCount = times.Count;
+
+                    <tr>
+                        <td>@tagId</td>
+                        <td>@lapCount</td>
+                        <td>
+                            @foreach (var t in times)
+                            {
+                                <div>@t</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="3">No data available</td></tr>
+            } *@
             @if (Model.RfidDataArray != null && Model.RfidDataArray.Length > 0)
             {
                 var grouped = Model.RfidDataArray
@@ -165,8 +218,6 @@
             "positionClass": "toast-top-right",
             "timeOut": "5000"
         };
-                let isRunning = false;
-        let updateInterval = null;
 
         // Success message after login
         @if (TempData["SuccessMessage"] != null)
@@ -217,97 +268,122 @@
                         },
                         complete: function () {
                             if (isRunning) {
-                                updateInterval = setTimeout(updateRfidData, 5000);
+                                updateInterval = setTimeout(updateRfidData, 150);
                             }
                         }
                     });
                 }
-                        function updateTable(data) {
-            const $body = $('#rfidDataBody');
-            $body.empty();
+              function updateTable(data) {
+    const $body = $('#rfidDataBody');
+    const eventName = $("#eventName").val();
 
-            if (!data || data.length === 0) {
-                $body.append(`<tr><td colspan="4">No data available</td></tr>`);
-                return;
-            }
+    // ❌ Empty data → kuch bhi mat karo (first poll safe)
+    if (!data || data.length === 0) {
+        return;
+    }
 
-            const eventName = $("#eventName").val();
+    $body.empty();
+    let srNo = 1;
 
-            const grouped = {};
-            data.forEach(item => {
-                grouped[item.tagId] = item; // always latest
-            });
+    data.forEach(item => {
 
-            let srNo = 1;
-            Object.values(grouped).forEach(item => {
+        let lapTimes = item.lapTimes || [];
+        let lapCount = lapTimes.length;
+        let timeHtml = "";
 
-                let lapCount = item.lapTimes.length;
-                let timeHtml = "";
+        // 🔹 FIRST SCAN (no lap time yet)
+        if (lapCount === 0) {
+            timeHtml = `<div class="text-muted fw-bold">Started</div>`;
+        }
+        // 🔹 100m / 500m → only latest time
+        else if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
+            timeHtml = `<div>${lapTimes[lapCount - 1]}</div>`;
+        }
+        // 🔹 Multi-lap events
+        else {
+            timeHtml = lapTimes
+                .map((t, i) => `<div>Lap ${i + 1}: ${t}</div>`)
+                .join('');
+        }
 
-                if (eventName == "100 Meter Running") {
-                    // Show only latest time for 100m
-                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
-                    lapCount = ""; // Hide lap count
-                }
-                 if (eventName == "500 meter Running") {
-                    // Show only latest time for 100m
-                    timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
-                    lapCount = ""; // Hide lap count
-                }
-               else {
-                    // Show each lap with "Lap x: timestamp"
-                    timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
-                }
-
-                      $body.append(`
-        <tr>
-            <td>${srNo}</td>             // Sr. No.
-            <td>${item.tagId}</td>       // RFID
-            <td>${item.ChestNo || ''}</td>   // Chest No
-            <td>${item.Barcode || ''}</td>   // Barcode
-            <td>${lapCount}</td>         // Lap Count
-            <td>${timeHtml}</td>         // Time
-        </tr>
+        $body.append(`
+            <tr>
+                <td>${srNo}</td>
+                <td>${item.tagId}</td>
+                <td>${(eventName === "100 Meter Running" || eventName === "500 meter Running") ? "" : lapCount}</td>
+                <td>${timeHtml}</td>
+            </tr>
         `);
 
+        srNo++;
+    });
 
-                srNo++;
-            });
+    // 🔹 Hide lap column for 100m / 500m
+    if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
+        $("th:nth-child(3), td:nth-child(3)").hide();
+    } else {
+        $("th:nth-child(3), td:nth-child(3)").show();
+    }
+}
 
-            // Hide lap count column for 100m
-            if (eventName === "100 Meter Running") {
-                $("th:nth-child(3), td:nth-child(3)").hide();
-            } else {
-                $("th:nth-child(3), td:nth-child(3)").show();
-            }
-        }
-        //         if (start) {
-        //     // Hide Chest No and Barcode columns
-        //     toggleColumnVisibility(false);
 
-        //     // First clear data
-        //     $.ajax({
-        //         url: '@Url.Action("ClearData", "RFID")',
-        //         type: 'POST',
-        //         success: function (response) {
-        //             if (response.success) {
-        //                 $('#rfidDataBody').empty();
-        //                 $('#debugInfo').text('Data cleared successfully. Starting RFID listener...');
-        //                 updateRfidData();
-        //                 $('#startButton').prop('disabled', true);
-        //                 $('#stopButton').prop('disabled', false);
-        //                 $('#clearButton').prop('disabled', true);
-        //             } else {
-        //                 $('#debugInfo').text('Failed to clear data.');
-        //             }
-        //         },
-        //         error: function (xhr, status, error) {
-        //             console.error('Error clearing data:', error);
-        //             $('#debugInfo').text('Error clearing data: ' + error);
+        //                 function updateTable(data) {
+        //     const $body = $('#rfidDataBody');
+        //     $body.empty();
+
+        //     if (!data || data.length === 0) {
+        //         $body.append(`<tr><td colspan="4">No data available</td></tr>`);
+        //         return;
+        //     }
+
+        //     const eventName = $("#eventName").val();
+
+        //     const grouped = {};
+        //            data.forEach(item => {
+        //     if (item.lapTimes && item.lapTimes.length > 0) {
+        //         grouped[item.tagId] = item;
+        //     }
+        // });
+        //     let srNo = 1;
+        //     Object.values(grouped).forEach(item => {
+
+        //         let lapCount = item.lapTimes.length;
+        //         let timeHtml = "";
+
+        //         if (eventName == "100 Meter Running") {
+        //             // Show only latest time for 100m
+        //             timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+        //             lapCount = ""; // Hide lap count
         //         }
-        //     });
-        // }
+        //          if (eventName == "500 meter Running") {
+        //             // Show only latest time for 100m
+        //             timeHtml = `<div>${item.lapTimes[item.lapTimes.length - 1]}</div>`;
+        //             lapCount = ""; // Hide lap count
+        //         }
+        //        else {
+        //             // Show each lap with "Lap x: timestamp"
+        //             timeHtml = item.lapTimes.map((t, index) => `<div>Lap ${index + 1}: ${t}</div>`).join('');
+        //         }
 
+        //         $body.append(`
+        //             <tr>
+        //                 <td>${srNo}</td>
+        //                 <td>${item.tagId}</td>
+        //                 <td>${lapCount}</td>
+        //                 <td>${timeHtml}</td>
+        //             </tr>
+        //         `);
+
+        //         srNo++;
+        //     });
+
+        //     // Hide lap count column for 100m
+        //     if (eventName === "100 Meter Running") {
+        //         $("th:nth-child(3), td:nth-child(3)").hide();
+        //     } else {
+        //         $("th:nth-child(3), td:nth-child(3)").show();
+        //     }
+        // }
               
                 function toggleListenerState(start) {
                     isRunning = start;
@@ -343,105 +419,29 @@
                         previousTagIds = [];
                     }
                 }
-        $('#startButton').click(function () {
-            isRunning = true;
-            updateRfidData();
 
-            $('#startButton').prop('disabled', true);
-            $('#stopButton').prop('disabled', false);
-        });
+                $('#startButton').click(function () {
+                    if (!isRunning) {
+                        toggleListenerState(true);
+                    }
+                });
 
 
-          $('#stopButton').click(function () {
-            $.post('/RFID/Stop', function (response) {
-                if (response.success && response.data) {
 
-                    const finalData = response.data; // Ye Stop() ka result
-
-                    // Remove duplicates agar chahiye
-                    const map = {};
-                    finalData.forEach(x => {
-                        const key = x.RFID + '_' + x.LapCount;
-                        if (!map[key]) {
-                            map[key] = x;
+                $('#stopButton').click(function () {
+                    $.post('@Url.Action("Stop", "RFID")', function (response) {
+                        if (response.success) {
+                            $('#debugInfo').text(response.message);
+                        } else {
+                            $('#debugInfo').text('Failed to insert RFID data.');
                         }
+                        toggleListenerState(false);
+                    }).fail(function (xhr, status, error) {
+                        console.error('Error stopping listener:', error);
+                        $('#debugInfo').text('Error stopping listener: ' + error);
                     });
+                });
 
-                    const filteredData = Object.values(map);
-
-                    updateTableWithChest(filteredData); // ✅ Show final data
-                }
-            });
-        });
-
-
-
-
-
-
-
-
-
-                // $('#stopButton').click(function () {
-                //     $.post('@Url.Action("Stop", "RFID")', function (response) {
-                //         if (response.success) {
-                //             $('#debugInfo').text(response.message);
-                //         } else {
-                //             $('#debugInfo').text('Failed to insert RFID data.');
-                //         }
-                //         toggleListenerState(false);
-                //     }).fail(function (xhr, status, error) {
-                //         console.error('Error stopping listener:', error);
-                //         $('#debugInfo').text('Error stopping listener: ' + error);
-                //     });
-                // });
-
-        //            function toggleColumnVisibility(showChestBarcode) {
-        //     if (showChestBarcode) {
-        //         $("th:nth-child(3), td:nth-child(3)").show(); // Chest No
-        //         $("th:nth-child(4), td:nth-child(4)").show(); // Barcode
-        //     } else {
-        //         $("th:nth-child(3), td:nth-child(3)").hide();
-        //         $("th:nth-child(4), td:nth-child(4)").hide();
-        //     }
-        // }
-                function toggleColumnVisibility(show) {
-            if (show) {
-                $("th, td").show();
-            }
-        }
-
-                     function updateTableWithChest(data) {
-            const $body = $('#rfidDataBody');
-            $body.empty();
-
-            if (!data || data.length === 0) {
-                $body.append(`<tr><td colspan="6">No data available</td></tr>`);
-                return;
-            }
-
-            let srNo = 1;
-
-            data.forEach(item => {
-                const lapCount = item.lapTimes ? item.lapTimes.length : item.LapCount || '';
-                const timeHtml = item.lapTimes
-                    ? item.lapTimes.map(t => `<div>${t}</div>`).join('')
-                    : item.CurrentDateTime || '';
-
-                $body.append(`
-                    <tr>
-                        <td>${srNo}</td>
-                        <td>${item.tagId || item.RFID}</td>
-                        <td>${item.chestNo || item.ChestNo || ''}</td>
-                        <td>${item.barcode || item.Barcode || ''}</td>
-                        <td>${lapCount}</td>
-                        <td>${timeHtml}</td>
-                    </tr>
-                `);
-
-                srNo++;
-            });
-        }
 
 
                 $('#clearButton').click(function () {
