@@ -127,24 +127,28 @@ namespace RFIDReaderPortal.Services
                     }).ToList();
 
                 // Decide lap count based on event
-                int totalLaps = eventName == "1600 Meter Running" ? 5 :
-                              eventName == "800 Meter Running" ? 3 :
-                                1;
+                //int totalLaps = eventName == "1600 Meter Running" ? 5 :
+                //              eventName == "800 Meter Running" ? 3 :
+                //                1;
 
                 // Prepare final request data
-                var requestData = groupedData.Select(x => new
+                var requestData = rfidDataList.Select(x => new
                 {
-                   RFIDdtagata = x.TagId,
-                    Lap1 = x.Laps.Count >= 1 ? x.Laps[0].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap2 = x.Laps.Count >= 2 ? x.Laps[1].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap3 = x.Laps.Count >= 3 ? x.Laps[2].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap4 = x.Laps.Count >= 4 ? x.Laps[3].Timestamp.ToString("HH:mm:ss:fff") : null,
-                    Lap5 = x.Laps.Count >= 5 ? x.Laps[4].Timestamp.ToString("HH:mm:ss:fff") : null,
+                    RFIDdtagata = x.TagId,
 
+                    Lap1 = x.LapTimes.Count >= 1 ? x.LapTimes[0].ToString("HH:mm:ss:fff") : null,
+                    Lap2 = x.LapTimes.Count >= 2 ? x.LapTimes[1].ToString("HH:mm:ss:fff") : null,
+                    Lap3 = x.LapTimes.Count >= 3 ? x.LapTimes[2].ToString("HH:mm:ss:fff") : null,
+                    Lap4 = x.LapTimes.Count >= 4 ? x.LapTimes[3].ToString("HH:mm:ss:fff") : null,
+                    Lap5 = x.LapTimes.Count >= 5 ? x.LapTimes[4].ToString("HH:mm:ss:fff") : null,
 
-                    TotalLaps = totalLaps,
+                    TotalLaps =
+         eventName == "1600 Meter Running" ? 5 :
+         eventName == "800 Meter Running" ? 3 : 1,
+
                     EventName = eventName
                 }).ToList();
+
 
 
                 // Send request
