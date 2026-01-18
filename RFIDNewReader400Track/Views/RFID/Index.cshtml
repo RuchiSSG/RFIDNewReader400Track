@@ -88,6 +88,7 @@
                 var accessToken = document.getElementById('access_token').value;
                 var deviceName = $('#deviceName').val();
                 var eventDropdown = $('#eventDropdown').val();
+                 var eventName = $('#eventDropdown option:selected').text();
                 var locationDropdown = $('#locationDropdown').val();
 
                 // Use Razor to get server-side values for UserId and RecruitId
@@ -98,6 +99,7 @@
                 var data = {
                     DeviceId: deviceName,
                     EventId: eventDropdown,
+                    eventName: eventName,
                     Location: locationDropdown,
                     UserId: userid,
                     RecruitId: recruitid

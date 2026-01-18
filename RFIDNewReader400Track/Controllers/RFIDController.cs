@@ -53,6 +53,7 @@ namespace RFIDReaderPortal.Controllers
 
 
         public async Task<IActionResult> Configuration()
+        
         {
             try
             
@@ -201,6 +202,7 @@ namespace RFIDReaderPortal.Controllers
                     string.IsNullOrEmpty(formData.EventId) ||
                     string.IsNullOrEmpty(formData.Location) ||
                     string.IsNullOrEmpty(formData.UserId) ||
+                    string.IsNullOrEmpty(formData.eventName) ||
                     string.IsNullOrEmpty(formData.RecruitId))
                 {
                     return BadRequest("All input fields are required.");
