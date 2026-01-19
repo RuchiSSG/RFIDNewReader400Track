@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PoliceRecruitmentAPI.Core.ModelDtos;
 using RFIDReaderPortal.Models;
 using RFIDReaderPortal.Services;
 using System;
@@ -14,6 +15,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
@@ -170,21 +172,27 @@ namespace RFIDReaderPortal.Controllers
                 else
                 {
                     // 🔹 GET GROUPS (LOGIN KE BAAD)
-                    dynamic groupResponse = await _apiService.GetAllGroupsAsync(
-                        accessToken,
-                        userid,
-                        recruitid,
-                       eventid,
-                       category,
-                        sesionid,
-                        ipaddress
-                    );
+                    var candidateDto = new CandidateDto
+                    {
+                        UserId    = userid,
+                        RecruitId = recruitid,
+                        EventId   = eventid,
+                        Category  = category
+                    };
+
+                    dynamic groupResponse =await _apiService.GetAllGroupsAsync(accessToken, candidateDto);
 
                     JArray groups = new JArray();
-                    if (groupResponse?.data != null)
+
+                    if (groupResponse != null && groupResponse.data != null)
                     {
-                        groups = (JArray)groupResponse.data;
+                        if (groupResponse.data is JArray arr)
+                            groups = arr;
+                        else if (groupResponse.data is JObject obj)
+                            groups.Add(obj);
                     }
+               
+
 
                     var viewModel1 = new RFIDViewModel
                     {
@@ -406,11 +414,11 @@ namespace RFIDReaderPortal.Controllers
                 var rfidDataArray = _tcpListenerService.GetReceivedData();
                 dynamic getAsyncResponse = await _apiService.GetAsync(accessToken, userid, deviceId, sesionid, ipaddress);
                 // 🔹 GET GROUP LIST FOR DROPDOWN
-                dynamic groupResponse = await _apiService.GetAllGroupsAsync(accessToken, userid, recruitid,eventId,category, sesionid, ipaddress);
+                //dynamic groupResponse = await _apiService.GetAllGroupsAsync( accessToken, CandidateDto);
 
-                JArray groups = new JArray();
-                if (groupResponse?.data != null)
-                    groups = (JArray)groupResponse.data;
+                //JArray groups = new JArray();
+                //if (groupResponse?.data != null)
+                //    groups = (JArray)groupResponse.data;
                 // Handle token refresh if provided
                 if (getAsyncResponse?.outcome?.tokens != null)
                 {
@@ -449,7 +457,7 @@ namespace RFIDReaderPortal.Controllers
                     RfidDataArray = rfidDataArray,
                     IsRunning = _tcpListenerService.IsRunning,
                     IPDataResponse = ipDataResponse,
-                    Groups = groups,
+                    //Groups = groups,
                     eventname = eventsList // Now correctly typed as IEnumerable<RecruitmentEventDto>
                 };
 

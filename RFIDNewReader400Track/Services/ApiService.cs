@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using PoliceRecruitmentAPI.Core.ModelDtos;
 using RFIDReaderPortal.Models;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -153,23 +154,28 @@ namespace RFIDReaderPortal.Services
             }
             throw new Exception("Failed to fetch recruitment events.");
         }
-        public async Task<object> GetAllGroupsAsync(string accessToken, string userid, string recruitid,string eventId,string category, string sessionid, string ipaddress)
+        public async Task<dynamic> GetAllGroupsAsync(string accessToken, CandidateDto model)
         {
-            var url = $"{_baseUrl}Candidate/GetGroup?userid={userid}&recruitid={recruitid}&eventid={eventId}&category={category}&sessionid={sessionid}&ipaddress={ipaddress}";
+            var url =$"{_baseUrl}Candidate/GetGroup?UserId={model.UserId}&RecruitId={model.RecruitId}&EventId={model.EventId}&Category={model.Category}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
 
             var response = await _httpClient.SendAsync(request);
 
-            if (response.IsSuccessStatusCode)
+            // 🔴 DEBUG ke liye (important)
+            var errorText = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
             {
-                dynamic content = await response.Content.ReadAsStringAsync();
-                dynamic desobj = JsonConvert.DeserializeObject(content);
-                return desobj;
+                throw new Exception($"API Error: {response.StatusCode} - {errorText}");
             }
-            throw new Exception("Failed to fetch recruitment events.");
+
+            return JsonConvert.DeserializeObject(errorText);
         }
+
+
         //public async Task<bool> PostRFIDRunningLogAsync(
         //    string accessToken, string userid, string recruitid, string DeviceId,
         //    string Location, string eventName, string eventId, List<RfidData> rfidDataList,
