@@ -11,7 +11,13 @@
         public string? eventId { get; set; }
         public string? Position { get; set; }
         public string? DeviceName { get; set; }
+        public string? Barcode { get; set; }
         public string? RecruitId { get; set; }
         public string? currentDateTime { get; set; }
+    }
+    public class ApiResponse<T>
+    {
+        public Outcome outcome { get; set; }
+        public T data { get; set; }
     }
 }

@@ -31,6 +31,6 @@ namespace RFIDReaderPortal.Models
 
         public bool IsConfigured { get; set; }
         public bool IsRunning { get; set; }
-
+        public List<RFIDChestNoMappingDto> ChestLogData { get; set; }
     }
 }

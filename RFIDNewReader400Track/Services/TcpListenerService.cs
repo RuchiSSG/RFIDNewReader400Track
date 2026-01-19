@@ -687,33 +687,40 @@ namespace RFIDReaderPortal.Services
         //        _sessionid, _ipaddress
         //    );
         //}
-        public async Task InsertStoredRfidDataAsync()
+        public async Task<List<RFIDChestNoMappingDto>> InsertStoredRfidDataAsync()
         {
             if (_snapshotData == null || _snapshotData.Count == 0)
             {
                 _logger.LogWarning("No snapshot RFID data to insert");
-                return;
+                return new List<RFIDChestNoMappingDto>();
             }
 
             var dataToInsert = _snapshotData
-                .Where(d => d.LapTimes.Count > 0) // safety
+                .Where(d => d.LapTimes.Count > 0)
                 .ToList();
 
             if (dataToInsert.Count == 0)
             {
                 _logger.LogWarning("Snapshot exists but no valid lap data");
-                return;
+                return new List<RFIDChestNoMappingDto>();
             }
 
-            _logger.LogInformation(
-                $"Inserting {dataToInsert.Count} RFID records (from snapshot)");
-
-            await _apiService.PostRFIDRunningLogAsync(
-                _accessToken, _userid, _recruitid, _deviceId,
-                _location, _eventName, _eventId, dataToInsert,
-                _sessionid, _ipaddress
+            var result = await _apiService.PostRFIDRunningLogAsync(
+                _accessToken,
+                _userid,
+                _recruitid,
+                _deviceId,
+                _location,
+                _eventName,
+                _eventId,
+                dataToInsert,
+                _sessionid,
+                _ipaddress
             );
+
+            return result ?? new List<RFIDChestNoMappingDto>();
         }
+
 
         public void ClearData()
         {
