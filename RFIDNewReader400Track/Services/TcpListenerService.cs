@@ -113,9 +113,23 @@ namespace RFIDReaderPortal.Services
         public void StartRace()
         {
             _raceStarted = true;
-            _lastProcessed.Clear();   // ✔ correct
-            _logger.LogInformation("Race officially STARTED");
+
+            // 🔥 CLEAR EVERYTHING BEFORE START
+            _receivedDataDict.Clear();
+            _lastProcessed.Clear();
+
+            while (_epcQueue.TryDequeue(out _)) { }
+
+            lock (_hexBuffer)
+            {
+                _hexBuffer.Clear();
+            }
+
+            _lastClearTime = DateTime.Now;
+
+            _logger.LogInformation("Race officially STARTED - old data cleared");
         }
+
 
 
         public void StopRace()
@@ -324,7 +338,7 @@ namespace RFIDReaderPortal.Services
             // ✅ PER-TAG DUPLICATE PREVENTION (FIRST LINE)
             var lastTime = _lastProcessed.GetOrAdd(epc, DateTime.MinValue);
 
-            if (timestamp - lastTime < TimeSpan.FromMilliseconds(150))
+            if (timestamp - lastTime < TimeSpan.FromMilliseconds(800))
                 return;
 
             _lastProcessed[epc] = timestamp;
@@ -391,42 +405,44 @@ namespace RFIDReaderPortal.Services
             }
 
 
-            // 🟢 MULTI-LAP EVENTS (800m / 1600m)
-            int maxLaps =
-                _eventName == "1600 Meter Running" ? 5 :
-                _eventName == "800 Meter Running" ? 3 : 1;
-
-            TimeSpan minLapGap = TimeSpan.FromSeconds(15);
-
-            if (rfidData.LapTimes.Count > 0)
+            lock (rfidData)   // 🔒 CRITICAL FIX
             {
-                var lastLap = rfidData.LapTimes.Last();
-                if (timestamp - lastLap < minLapGap)
+                int maxLaps =
+                    _eventName == "1600 Meter Running" ? 5 :
+                    _eventName == "800 Meter Running" ? 3 : 1;
+
+                TimeSpan minLapGap = TimeSpan.FromSeconds(15);
+
+                if (rfidData.LapTimes.Count > 0)
                 {
-                    _logger.LogDebug(
-                        $"Early lap ignored for {epc}, gap {(timestamp - lastLap).TotalSeconds}s");
+                    var lastLap = rfidData.LapTimes.Last();
+
+                    if (timestamp - lastLap < minLapGap)
+                    {
+                        _logger.LogDebug(
+                            $"Early lap ignored for {epc}, gap {(timestamp - lastLap).TotalSeconds}s");
+                        return;
+                    }
+                }
+
+                if (rfidData.LapTimes.Count >= maxLaps)
+                {
+                    _logger.LogDebug($"Max laps reached for {epc}");
                     return;
                 }
+
+                rfidData.LapTimes.Add(timestamp);
+
+                if (rfidData.LapTimes.Count == maxLaps)
+                {
+                    rfidData.IsCompleted = true;
+                    _logger.LogInformation($"Race completed for {epc}");
+                }
+
+                _logger.LogInformation(
+                    $"Recorded lap {rfidData.LapTimes.Count}/{maxLaps} for {epc} at {timestamp:HH:mm:ss:fff}");
             }
 
-            if (rfidData.LapTimes.Count >= maxLaps)
-            {
-                _logger.LogDebug($"Max laps reached for {epc}");
-                return;
-            }
-
-            rfidData.LapTimes.Add(timestamp);
-            shouldStore = true;
-
-            // 🔒 If final lap → mark completed
-            if (rfidData.LapTimes.Count == maxLaps)
-            {
-                rfidData.IsCompleted = true;
-                _logger.LogInformation($"Race completed for {epc}");
-            }
-
-            _logger.LogInformation(
-                $"Recorded lap {rfidData.LapTimes.Count}/{maxLaps} for {epc} at {timestamp:HH:mm:ss:fff}");
 
             // ---------------- STORE SNAPSHOT ----------------
             if (shouldStore)
