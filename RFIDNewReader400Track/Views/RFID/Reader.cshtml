@@ -67,7 +67,7 @@
     <h1 class="mt-4">RFID Data</h1>
     <div id="debugInfo" class="alert alert-info mb-3"></div>
 
-    <table class="table table-bordered">
+    <table id="rfidTable" class="table table-bordered">
         <thead>
             <tr>
                 <th>Sr. No.</th>
@@ -342,58 +342,56 @@
 
 
 
-              function updateTable(data) {
-    const $body = $('#rfidDataBody');
-    const eventName = $("#eventName").val();
+                 function updateTable(data) {
+            const $body = $('#rfidDataBody');
+            const eventName = $("#eventName").val();
 
-    // ❌ Empty data → kuch bhi mat karo (first poll safe)
-    if (!data || data.length === 0) {
-        return;
-    }
+            if (!data || data.length === 0) return;
 
-    $body.empty();
-    let srNo = 1;
+            $body.empty();
+            let srNo = 1;
 
-    data.forEach(item => {
+            data.forEach(item => {
 
-        let lapTimes = item.lapTimes || [];
-        let lapCount = lapTimes.length;
-        let timeHtml = "";
+                const lapTimes = item.lapTimes || [];
+                const lapCount = lapTimes.length;
+                let timeHtml = "";
 
-        // 🔹 FIRST SCAN (no lap time yet)
-        if (lapCount === 0) {
-            timeHtml = `<div class="text-muted fw-bold">Started</div>`;
-        }
-        // 🔹 100m / 500m → only latest time
-        else if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
-            timeHtml = `<div>${lapTimes[lapCount - 1]}</div>`;
-        }
-        // 🔹 Multi-lap events
-        else {
-            timeHtml = lapTimes
-                .map((t, i) => `<div>Lap ${i + 1}: ${t}</div>`)
-                .join('');
-        }
+                // 🔹 No valid lap yet
+                if (lapCount === 0) {
+                    timeHtml = `<div class="text-muted fw-bold">Started</div>`;
+                }
+                // 🔹 100m / 500m → ONLY FIRST (FINAL) TIME
+                else if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
+                    timeHtml = `<div class="fw-bold text-success">${lapTimes[0]}</div>`;
+                }
+                // 🔹 Multi-lap events (1600 / 800)
+                else {
+                    timeHtml = lapTimes
+                        .map((t, i) => `<div>Lap ${i + 1}: ${t}</div>`)
+                        .join('');
+                }
 
-        $body.append(`
-            <tr>
-                <td>${srNo}</td>
-                <td>${item.tagId}</td>
-                <td>${(eventName === "100 Meter Running" || eventName === "500 meter Running") ? "" : lapCount}</td>
-                <td>${timeHtml}</td>
-            </tr>
-        `);
+                $body.append(`
+                    <tr>
+                        <td>${srNo}</td>
+                        <td>${item.tagId}</td>
+                        <td>${(eventName === "100 Meter Running" || eventName === "500 meter Running") ? "" : lapCount}</td>
+                        <td>${timeHtml}</td>
+                    </tr>
+                `);
 
-        srNo++;
-    });
+                srNo++;
+            });
 
-    // 🔹 Hide lap column for 100m / 500m
+            // 🔹 Hide Lap Count column for 100m / 500m
             if (eventName === "100 Meter Running" || eventName === "500 meter Running") {
-            $("#rfidDataBody").closest('table').find("th:nth-child(3), td:nth-child(3)").hide();
-        } else {
-            $("#rfidDataBody").closest('table').find("th:nth-child(3), td:nth-child(3)").show();
+               $("#rfidTable th:nth-child(3), #rfidTable td:nth-child(3)").hide();
+            } else {
+                $("#rfidTable th:nth-child(3), #rfidTable td:nth-child(3)").show();
+            }
         }
-}
+
 
 
         //                 function updateTable(data) {
@@ -492,12 +490,21 @@
                         previousTagIds = [];
                     }
                 }
+                        $('#startButton').click(function () {
+            $.ajax({
+                url: '@Url.Action("StartRace", "RFID")',
+                type: 'POST',
+                success: function () {
+                    toggleListenerState(true);
+                }
+            });
+        });
 
-                $('#startButton').click(function () {
-                    if (!isRunning) {
-                        toggleListenerState(true);
-                    }
-                });
+                // $('#startButton').click(function () {
+                //     if (!isRunning) {
+                //         toggleListenerState(true);
+                //     }
+                // });
 
                                        $('#stopButton').click(function () {
             $.ajax({

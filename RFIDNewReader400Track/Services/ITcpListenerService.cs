@@ -11,7 +11,8 @@ namespace RFIDReaderPortal.Services
         void Start();
 
         void Stop();
-
+        void StartRace();   // ✅ ADD THIS
+        void StopRace();
         RfidData[] GetReceivedData();
 
         string[] GetHexData();
