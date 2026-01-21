@@ -59,6 +59,7 @@ namespace RFIDReaderPortal.Controllers
         {
             try
             
+            
             {
                 var httpClient = new HttpClient();
                 ApiService apiservice = new ApiService(httpClient, _configuration, _logger);

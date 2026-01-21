@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RFIDReaderPortal.Models;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace PoliceRecruitmentAPI.Core.ModelDtos
 {
 	public class CandidateDto
 	{
+        public BaseModel? BaseModel { get; set; }
         public string? UserId { get; set; }
         public string? RecruitId { get; set; }
         public string? EventId { get; set; }
