@@ -493,11 +493,38 @@
                     }
                 }
 
-                $('#startButton').click(function () {
-                    if (!isRunning) {
-                        toggleListenerState(true);
-                    }
-                });
+                      $('#startButton').click(function () {
+
+            Swal.fire({
+                title: "Start Race?",
+                text: "First 25 scanned candidates will be locked",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, Lock & Start"
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+
+                    // 🔐 STEP-1: Lock race
+                    $.post('@Url.Action("LockRace", "RFID")', function (res) {
+
+                        if (res.success) {
+
+                            toastr.success("25 candidates locked");
+
+                            // 🔄 STEP-2: Start listener
+                            toggleListenerState(true);
+
+                        } else {
+                            toastr.error(res.message || "Race lock failed");
+                        }
+
+                    });
+
+                }
+            });
+        });
+
 
                                        $('#stopButton').click(function () {
             $.ajax({
