@@ -503,7 +503,7 @@ namespace RFIDReaderPortal.Services
                     var lastLapTime = data.LapTimes.Last();
 
                     // Same lap / early scan → ignore
-                    if (timestamp - lastLapTime < TimeSpan.FromSeconds(15))
+                    if (timestamp - lastLapTime < TimeSpan.FromSeconds(30))
                     {
                         _logger.LogDebug(
                             $"IGNORED | {epc} | Early lap scan ({(timestamp - lastLapTime).TotalSeconds:F1}s)");
