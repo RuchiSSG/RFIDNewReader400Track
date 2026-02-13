@@ -1,5 +1,4 @@
-﻿
-@model RFIDReaderPortal.Models.RFIDViewModel
+﻿@model RFIDReaderPortal.Models.RFIDViewModel
 
 @{
     var Categs = Model.Categories;
@@ -22,7 +21,7 @@
                 <div class="mb-3">
                     <label for="deviceName" class="form-label">Device Name:</label>
                     <input type="text" id="deviceName" class="form-control" value="@(Model.ReaderIPs?.FirstOrDefault() ?? "")" readonly>
-                   
+
                 </div>
 
                 <div class="mb-3">
@@ -51,7 +50,7 @@
                 </div>
 
                 <input type="hidden" id="access_token" value="@ViewData["AccessToken"]" />
-                <button type="submit" class="btn btn-primary" onclick="SubmitButton(event)">Submit</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
                 <button id="resetButton" type="button" class="btn btn-warning me-2" onclick="window.location.href='@Url.Action("Login", "Account")'">Back</button>
             </form>
         </div>
@@ -75,9 +74,9 @@
         // Show login success message if it exists
         @if (TempData["SuccessMessage"] != null)
         {
-            <text>
-                toastr.success('@TempData["SuccessMessage"]');
-            </text>
+                    <text>
+                        toastr.success('@TempData["SuccessMessage"]');
+                    </text>
         }
 
             function SubmitButton(event) {
@@ -88,6 +87,7 @@
                 var accessToken = document.getElementById('access_token').value;
                 var deviceName = $('#deviceName').val();
                 var eventDropdown = $('#eventDropdown').val();
+                 var eventName = $('#eventDropdown option:selected').text();
                 var locationDropdown = $('#locationDropdown').val();
 
                 // Use Razor to get server-side values for UserId and RecruitId
@@ -98,6 +98,7 @@
                 var data = {
                     DeviceId: deviceName,
                     EventId: eventDropdown,
+                    eventName: eventName,
                     Location: locationDropdown,
                     UserId: userid,
                     RecruitId: recruitid
@@ -122,7 +123,8 @@
                                 confirmButtonText: 'OK'
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    window.location.href = response.redirectUrl + '?eventName=' + encodeURIComponent(eventDropdown);
+                                    window.location.href = response.redirectUrl + '?eventId=' + encodeURIComponent(eventDropdown);
+
                                 }
                             });
                         } else {
@@ -141,7 +143,7 @@
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message; // Use the error message from the server if available
                         }
-                        Swal.fire({ 
+                        Swal.fire({
                             title: 'Error!',
                             text: errorMessage,
                             icon: 'error',
