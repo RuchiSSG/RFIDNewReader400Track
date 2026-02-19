@@ -7,7 +7,7 @@
         public string? RFID { get; set; }
         public string? UserId { get; set; }
         public string? ChestNo { get; set; }
-        public string? Barcode { get; set; }
+        //public string? Barcode { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? eventId { get; set; }
         public string? Position { get; set; }
