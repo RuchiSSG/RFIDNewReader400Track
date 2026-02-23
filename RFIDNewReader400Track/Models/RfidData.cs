@@ -3,13 +3,16 @@
     public class RfidData
     {
         public string TagId { get; set; }
+        public DateTime LastScanTime { get; set; }
         public DateTime Timestamp { get; set; }
         public List<DateTime> LapTimes { get; set; }
         public byte Rssi { get; set; }
+        public DateTime LastReadTime { get; set; }
         public byte Antenna { get; set; }
         public bool IsCompleted { get; set; }
+        public DateTime LastProcessedTime { get; set; }
         public int LapCount => LapTimes?.Count ?? 0;
-
+        public DateTime CurrentLapStartTime { get; set; }
         public TimeSpan? LastLapDuration
         {
             get
