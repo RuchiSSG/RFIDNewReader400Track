@@ -734,7 +734,7 @@ namespace RFIDReaderPortal.Services
         private DateTime _lastClearTime = DateTime.MinValue;
         private readonly IApiService _apiService;
         private readonly ILogger<TcpListenerService> _logger;
-
+        private Timer _completionTimer;
         // Reduced window for better tag detection
         //private readonly TimeSpan _duplicatePreventionWindow = TimeSpan.FromSeconds(2);
         private readonly TimeSpan _duplicatePreventionWindow = TimeSpan.FromMilliseconds(300);
@@ -761,6 +761,7 @@ namespace RFIDReaderPortal.Services
             _receivedDataDict = new ConcurrentDictionary<string, RfidData>();
             _hexString = new string[MAX_DATA_COUNT];
             _hexdataCount = 0;
+            _completionTimer = new Timer(CheckCompletion, null, 0, 1000);
         }
 
         public void SetParameters(string accessToken, string userid, string recruitid,
@@ -1198,7 +1199,38 @@ namespace RFIDReaderPortal.Services
         //        }
         //    }
         //}
+        private void CheckCompletion(object state)
+        {
+            foreach (var item in _receivedDataDict.Values)
+            {
+                int maxLaps = 1;
 
+                if (_eventName == "800 Meter Running")
+                    maxLaps = 3;
+                else if (_eventName == "1600 Meter Running")
+                    maxLaps = 5;
+
+                // Only check if last lap already reached
+                if (item.LapTimes.Count >= maxLaps && !item.IsCompleted)
+                {
+                    if (item.LastScanTime == default)
+                        continue;
+
+                    var idleTime = DateTime.Now - item.LastScanTime;
+
+                    if (idleTime.TotalSeconds >= 5)
+                    {
+                        item.IsCompleted = true;
+
+                        _logger.LogInformation(
+                            $"Race auto-completed for {item.TagId} after 5 sec idle");
+
+                        Console.WriteLine(
+                            $"STOPPED updating {item.TagId} at {DateTime.Now:HH:mm:ss}");
+                    }
+                }
+            }
+        }
         //Latest updated time get from this 
         //Latest updated time get from this 
         //6️⃣ TAG PROCESSING LOGIC
@@ -1206,6 +1238,8 @@ namespace RFIDReaderPortal.Services
         //Method: ProcessTag()
         private void ProcessTag(string epc, DateTime timestamp)
         {
+            //if (rfidData.IsCompleted)
+            //    return;
 
             Console.WriteLine($"TAG READ: {epc} at {timestamp:HH:mm:ss.fff}");
             // -Check if tag exists in _allowedTags.
@@ -1222,6 +1256,11 @@ namespace RFIDReaderPortal.Services
                 LapTimes = new List<DateTime>(),
                 IsCompleted = false
             });
+            if (rfidData.IsCompleted)
+            {
+                _logger.LogInformation($"Tag {epc} ignored — already completed");
+                return;
+            }
 
             // 🔥 Duplicate fast scan prevention
             if (rfidData.Timestamp != DateTime.MinValue)
@@ -1232,6 +1271,8 @@ namespace RFIDReaderPortal.Services
             }
 
             rfidData.Timestamp = timestamp;
+            // 🔥 VERY IMPORTANT
+            rfidData.LastScanTime = timestamp;
             bool shouldStore = false;
 
             // ====================================================
@@ -1273,8 +1314,9 @@ namespace RFIDReaderPortal.Services
                     // ✅ If max laps already reached → ONLY update last lap
                     if (rfidData.LapTimes.Count >= maxLaps)
                     {
+                        // Only update last lap time
                         rfidData.LapTimes[maxLaps - 1] = timestamp;
-                        rfidData.IsCompleted = true;
+                        rfidData.LastScanTime = timestamp;   // 🔥 important
                         shouldStore = true;
                         return;
                     }
@@ -1283,15 +1325,17 @@ namespace RFIDReaderPortal.Services
                     if (gap >= minLapGap)
                     {
                         rfidData.LapTimes.Add(timestamp);
+                        rfidData.LastScanTime = timestamp;   // 🔥 add this
                         shouldStore = true;
 
-                        if (rfidData.LapTimes.Count == maxLaps)
-                            rfidData.IsCompleted = true;
+                        //if (rfidData.LapTimes.Count == maxLaps)
+                        //    rfidData.IsCompleted = true;
                     }
                     else
                     {
                         // Live update current lap
                         rfidData.LapTimes[rfidData.LapTimes.Count - 1] = timestamp;
+                        rfidData.LastScanTime = timestamp;   // 🔥 add this
                         shouldStore = true;
                     }
                 }
