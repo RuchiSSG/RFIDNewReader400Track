@@ -700,7 +700,6 @@
 //        }
 //    }
 //}
-using Microsoft.VisualBasic;
 using RFIDReaderPortal.Models;
 using System.Collections.Concurrent;
 using System.Net;
@@ -782,6 +781,28 @@ namespace RFIDReaderPortal.Services
 
         public void Start()
         {
+            _raceStarted=false;
+            _receivedDataDict.Clear();
+            _storedRfidData.Clear();
+            _snapshotData.Clear();
+            _lastProcessed.Clear();
+            _lastSeenScan.Clear();
+
+            // 🔥 STEP 4: QUEUE DRAIN KARO
+            while (_epcQueue.TryDequeue(out _)) { }
+
+            // 🔥 STEP 5: HEX BUFFER CLEAR KARO (lock ke saath)
+            lock (_hexBuffer)
+            {
+                _hexBuffer.Clear();
+            }
+
+            // 🔥 STEP 6: HEX STRING ARRAY CLEAR KARO
+            lock (_hexLock)
+            {
+                Array.Clear(_hexString, 0, _hexString.Length);
+                _hexdataCount = 0;
+            }
             if (!IsRunning)
             {
                 _tcpListener.Start();
@@ -827,7 +848,10 @@ namespace RFIDReaderPortal.Services
         //}
         public void StartRace()
         {
-            // 🔥 ENSURE LISTENER IS RUNNING
+            // 🔥 STEP 1: PEHLE RACE BAND KARO
+            _raceStarted = false;
+
+            // 🔥 STEP 2: LISTENER START KARO
             if (!IsRunning)
             {
                 _tcpListener.Start();
@@ -837,24 +861,36 @@ namespace RFIDReaderPortal.Services
                 _logger.LogInformation("TCP Listener restarted for new race");
             }
 
-            _raceStarted = true;
-            _raceStartTime = DateTime.Now;
-
+            // 🔥 STEP 3: SAB CLEAR KARO
             _receivedDataDict.Clear();
             _storedRfidData.Clear();
             _snapshotData.Clear();
             _lastProcessed.Clear();
+            _lastSeenScan.Clear();
 
+            // 🔥 STEP 4: QUEUE DRAIN KARO
             while (_epcQueue.TryDequeue(out _)) { }
 
+            // 🔥 STEP 5: HEX BUFFER CLEAR KARO (lock ke saath)
             lock (_hexBuffer)
             {
                 _hexBuffer.Clear();
             }
 
+            // 🔥 STEP 6: HEX STRING ARRAY CLEAR KARO
+            lock (_hexLock)
+            {
+                Array.Clear(_hexString, 0, _hexString.Length);
+                _hexdataCount = 0;
+            }
+
             _lastClearTime = DateTime.Now;
 
-            _logger.LogInformation("Race officially STARTED - old data cleared");
+            // 🔥 STEP 7: AB RACE START KARO — BILKUL LAST MEIN
+            _raceStartTime = DateTime.Now;
+            _raceStarted = true;
+
+            _logger.LogInformation($"Race officially STARTED at {_raceStartTime}");
         }
 
 
@@ -1238,9 +1274,15 @@ namespace RFIDReaderPortal.Services
         //Method: ProcessTag()
         private void ProcessTag(string epc, DateTime timestamp)
         {
-            //if (rfidData.IsCompleted)
-            //    return;
+            if (!_raceStarted)
+                return;
 
+            // 🔥 RACE START SE PEHLE KA Kोई BHI SCAN REJECT
+            if (_raceStartTime.HasValue && timestamp < _raceStartTime.Value)
+            {
+                _logger.LogInformation($"Pre-race tag rejected: {epc} ts={timestamp:HH:mm:ss.fff} raceStart={_raceStartTime.Value:HH:mm:ss.fff}");
+                return;
+            }
             Console.WriteLine($"TAG READ: {epc} at {timestamp:HH:mm:ss.fff}");
             // -Check if tag exists in _allowedTags.
             if (!_allowedTags.ContainsKey(epc))

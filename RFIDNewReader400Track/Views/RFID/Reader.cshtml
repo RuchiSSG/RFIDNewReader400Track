@@ -897,15 +897,17 @@
                                                     url: '@Url.Action("Reset", "RFID")',
                                                     type: 'POST',
                                                     success: function (response) {
-                                                        if (response.success) {
-                                                            $('#debugInfo').text(response.message);
-                                                            console.log(response.message);
-                                                            Swal.fire(
-                                                                'Reset!',
-                                                                'Reset successful!',
-                                                                'success'
-                                                            );
-                                                        } else {
+                                                          if (response.success) {
+
+            Swal.fire(
+                'Reset!',
+                'Reset successful!',
+                'success'
+            ).then(() => {
+                window.location.href = '@Url.Action("Configuration", "RFID")';
+            });
+
+        } else {
                                                             $('#debugInfo').text('Error resetting system.');
                                                             Swal.fire(
                                                                 'Error!',
