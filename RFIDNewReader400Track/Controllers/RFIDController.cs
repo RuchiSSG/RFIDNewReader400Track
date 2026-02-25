@@ -708,7 +708,7 @@ namespace RFIDReaderPortal.Controllers
         private readonly ILogger<ApiService> _logger;
         private static Dictionary<string, RfidData> _latestRfidData = new Dictionary<string, RfidData>();
         private static DateTime _lastClearTime = DateTime.MinValue;
-
+        private bool isActive;
         public RFIDController(
              IApiService apiService,
              IRFIDDiscoveryService rfidDiscoveryService,
@@ -1134,7 +1134,7 @@ namespace RFIDReaderPortal.Controllers
                 );
                 // 🔥 YAHI CALL KARO
                 _tcpListenerService.SetAllowedTags(
-         result.Select(x => x.TagId)
+         result.Select(x => x.TagId), isActive: false  // ✅ Race start hone tak filter inactive rahega
      );
 
                 return Json(result);
