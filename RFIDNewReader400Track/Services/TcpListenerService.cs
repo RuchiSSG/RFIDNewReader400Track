@@ -851,7 +851,7 @@ namespace RFIDReaderPortal.Services
         {
             // 🔥 STEP 1: PEHLE RACE BAND KARO
             _raceStarted = false;
-
+            _isTagFilterActive = true;
             // 🔥 STEP 2: LISTENER START KARO
             if (!IsRunning)
             {
@@ -1429,7 +1429,7 @@ namespace RFIDReaderPortal.Services
             _allowedTags.Clear();
             foreach (var tag in tagIds)
                 _allowedTags[tag.ToUpperInvariant()] = true;
-
+            _isTagFilterActive = isActive;
             _receivedDataDict.Clear();
             _lastProcessed.Clear();
         }
