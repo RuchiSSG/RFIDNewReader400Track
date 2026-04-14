@@ -37,6 +37,20 @@
                         }
                     </select>
                 </div>
+                <div class="mb-3">
+                    <label for="categoryDropdown" class="form-label">Category:</label>
+                    <select class="form-select" id="categoryDropdown" name="categoryDropdown">
+                        <option value="">-- Select Category --</option>
+
+                        @if (Model.Categories != null && Model.Categories.Any())
+                        {
+                            foreach (var item in Model.Categories)
+                            {
+                                <option value="@item.Id">@item.CategoryName</option>
+                            }
+                        }
+                    </select>
+                </div>
 
                 <div class="mb-3">
                     <label for="locationDropdown" class="form-label">Location:</label>
@@ -89,7 +103,8 @@
                 var eventDropdown = $('#eventDropdown').val();
                  var eventName = $('#eventDropdown option:selected').text();
                 var locationDropdown = $('#locationDropdown').val();
-
+        var categoryDropdown = $('#categoryDropdown').val();
+                       var categoryName = $('#categoryDropdown option:selected').text();
                 // Use Razor to get server-side values for UserId and RecruitId
                 const userid = '@ViewBag.UserId';
                 const recruitid = '@ViewBag.RecruitId';
@@ -99,6 +114,8 @@
                     DeviceId: deviceName,
                     EventId: eventDropdown,
                     eventName: eventName,
+                    CategoryId: categoryDropdown,
+                    CategoryName: categoryName,
                     Location: locationDropdown,
                     UserId: userid,
                     RecruitId: recruitid
@@ -123,7 +140,9 @@
                                 confirmButtonText: 'OK'
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    window.location.href = response.redirectUrl + '?eventId=' + encodeURIComponent(eventDropdown);
+                                   window.location.href = response.redirectUrl
+        + '?eventId=' + encodeURIComponent(eventDropdown)
+        + '&categoryId=' + encodeURIComponent(categoryDropdown);
 
                                 }
                             });

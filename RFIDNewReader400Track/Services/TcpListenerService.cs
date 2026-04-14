@@ -727,6 +727,8 @@ namespace RFIDReaderPortal.Services
         private string _location;
         private string _eventName;
         private string _eventId;
+        private string _categoryName;
+        private string _categoryId;
         private string _sessionid;
         private string _ipaddress;
         private DateTime? _raceStartTime;
@@ -766,7 +768,7 @@ namespace RFIDReaderPortal.Services
 
         public void SetParameters(string accessToken, string userid, string recruitid,
                                   string deviceId, string location, string eventName, string eventId,
-                                  string ipaddress, string sessionid)
+                                  string ipaddress, string sessionid, string categoryId, string categoryName)
         {
             _accessToken = accessToken;
             _userid = userid;
@@ -777,6 +779,8 @@ namespace RFIDReaderPortal.Services
             _eventName = eventName;
             _sessionid = sessionid;
             _ipaddress = ipaddress;
+            _categoryId=categoryId;
+            _categoryName=categoryName;
             //IsRunning = false;
         }
 
@@ -1466,7 +1470,9 @@ namespace RFIDReaderPortal.Services
                 _eventId,
                 dataToInsert,
                 _sessionid,
-                _ipaddress
+                _ipaddress,
+                 _categoryId,
+                _categoryName
             );
 
             return result ?? new List<RFIDChestNoMappingDto>();

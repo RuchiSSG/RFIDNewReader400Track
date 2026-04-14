@@ -12,7 +12,7 @@ namespace RFIDReaderPortal.Services
 
 
         Task<object> GetAllRecruitEventsAsync(string accessToken, string userid, string recruitid, string sessionid, string ipaddress);
-        Task<object> GetAllCategorysync(string accessToken, string userid, string recruitid);
+        Task<object> GetAllCategorysync(string accessToken, string userid, string recruitid, string sesionid, string ipaddress);
 
         Task<object> GetAsync(string accessToken, string userid, string deviceid, string sessionid, string ipaddress);
         Task ProcessRFIDEventAsync(EventModel model, string accessToken);
@@ -20,7 +20,7 @@ namespace RFIDReaderPortal.Services
         Task<List<ChestRFIDDto>> GetAllChestRFID(string accessToken, string userid, string recruitid, string eventId, string eventName, string sessionid, string ipaddress, int groupId);
         Task<dynamic> InsertDeviceConfigurationAsync(string accessToken, DeviceConfigurationDto formData, string sesionid, string ipaddress);
         Task<DeleteRfid> DeleteRFIDRecordsAsync(string accessToken, string userid, string recruitid, string deviceId, string location, string eventName, string eventId, string sessionid, string ipaddress);
-        Task<List<RFIDChestNoMappingDto>> PostRFIDRunningLogAsync(string accessToken, string userid, string recruitid, string DeviceId, string Location, string eventName, string eventId, List<RfidData> rfidDataList, string sessionid, string ipaddress);
+        Task<List<RFIDChestNoMappingDto>> PostRFIDRunningLogAsync(string accessToken, string userid, string recruitid, string DeviceId, string Location, string eventName, string eventId, List<RfidData> rfidDataList, string sessionid, string ipaddress, string categoryId, string categoryName);
 
     }
 }
