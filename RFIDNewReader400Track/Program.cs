@@ -164,7 +164,7 @@ builder.Services.AddSingleton<ITcpListenerService, TcpListenerService>();
 
 // Add ApiBaseUrl to DI container
 builder.Services.AddSingleton(new ApiConfig { BaseUrl = apiBaseUrl });
-builder.WebHost.UseUrls("http://localhost:5003", "https://localhost:5004");
+builder.WebHost.UseUrls("http://localhost:5008", "https://localhost:5004");
 var app = builder.Build();
 
 var tcpListenerService = app.Services.GetRequiredService<ITcpListenerService>();
