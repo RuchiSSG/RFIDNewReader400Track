@@ -803,7 +803,7 @@ namespace RFIDReaderPortal.Controllers
                 dynamic getAsyncResponse;
                 try
                 {
-                    getAsyncResponse = await _apiService.GetAsync(accessToken, userid, model.DeviceId, sesionid, ipaddress);
+                    getAsyncResponse = await _apiService.GetAsync(accessToken, userid, model.DeviceId, model.RecruitId, sesionid, ipaddress);
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -1188,7 +1188,7 @@ namespace RFIDReaderPortal.Controllers
                 string eventId = Request.Cookies["EventId"];
                 string ipaddress = Request.Cookies["IpAddress"];
                 string sesionid = Request.Cookies["sessionid"];
-
+                ViewBag.ReleaseUrl = _configuration["ReleaseDeviceUrl"];
                 if (!_tcpListenerService.IsRunning)
                 {
                     _tcpListenerService.SetParameters(accessToken, userid, recruitid, deviceId, location, eventName, eventId, sesionid, ipaddress, categoryId, categoryName);
@@ -1204,7 +1204,7 @@ namespace RFIDReaderPortal.Controllers
 
                 var rfidDataArray = _tcpListenerService.GetReceivedData();
 
-                dynamic getAsyncResponse = await _apiService.GetAsync(accessToken, userid, deviceId, sesionid, ipaddress);
+                dynamic getAsyncResponse = await _apiService.GetAsync(accessToken, userid, deviceId, recruitid, sesionid, ipaddress);
 
                 // Handle token refresh if provided
                 if (getAsyncResponse?.outcome?.tokens != null)
@@ -1212,7 +1212,33 @@ namespace RFIDReaderPortal.Controllers
                     string newToken = getAsyncResponse.outcome.tokens.ToString();
                     Response.Cookies.Append("accesstoken", newToken);
                 }
+                // ===================== HANDLE DEVICE MAPPED =====================
+                int outcomeId = getAsyncResponse?.outcome?.outcomeId ?? 0;
 
+                string outcomeMessage =
+                    getAsyncResponse?.outcome?.outcomeDetail?.ToString();
+
+                if (outcomeId == 2)
+                {
+                    ViewBag.ErrorMessage = outcomeMessage;
+
+                    if (getAsyncResponse?.data != null)
+                    {
+                        var mappedData = JsonConvert.DeserializeObject<List<DeviceConfigurationDto>>(
+                            JsonConvert.SerializeObject(getAsyncResponse.data)
+                        );
+
+                        if (mappedData != null && mappedData.Count > 0)
+                        {
+                            ViewBag.Post = mappedData[0].Post;
+                            ViewBag.Place = mappedData[0].Place;
+                            ViewBag.Year = mappedData[0].Year;
+                            ViewBag.UserName = mappedData[0].UserName;
+                            ViewBag.eventName = mappedData[0].eventName;
+
+                        }
+                    }
+                }
                 // Convert the dynamic data to List<DeviceConfigurationDto>
                 List<DeviceConfigurationDto> ipDataResponse = new List<DeviceConfigurationDto>();
                 if (getAsyncResponse?.data != null)

@@ -526,9 +526,9 @@ namespace RFIDReaderPortal.Services
         }
 
 
-        public async Task<object> GetAsync(string accessToken, string userid, string deviceid, string sessionid, string ipaddress)
+        public async Task<object> GetAsync(string accessToken, string userid, string deviceid, string recruitid, string sessionid, string ipaddress)
         {
-            var url = $"{_baseUrl}DeviceConfiguration/Get?userid={userid}&deviceid={deviceid}&sessionid={sessionid}&ipaddress={ipaddress}";
+            var url = $"{_baseUrl}DeviceConfiguration/Get?userid={userid}&deviceid={deviceid}&recruitid={recruitid}&sessionid={sessionid}&ipaddress={ipaddress}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);

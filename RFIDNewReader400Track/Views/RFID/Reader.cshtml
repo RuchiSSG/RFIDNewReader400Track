@@ -283,6 +283,42 @@
 
 @section Scripts {
     <script>
+                      @if (ViewBag.ErrorMessage != null)
+        {
+                    <text>
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Device Already Configured',
+                            html: `
+                                <b>Message:</b> @ViewBag.ErrorMessage <br><br>
+
+                                <b>User Name:</b> @ViewBag.UserName <br>
+                                <b>EventName:</b> @ViewBag.eventName <br><br>
+                                <b>Post:</b> @ViewBag.Post <br>
+                                <b>Place:</b> @ViewBag.Place <br>
+                                <b>Year:</b> @ViewBag.Year <br><br>
+
+                                <a href="@ViewBag.ReleaseUrl"
+                                   target="_blank"
+                                   style="color:blue;font-weight:bold;">
+                                    Click Here To Release Device
+                                </a>
+                            `,
+                            confirmButtonText: 'OK',
+                            allowOutsideClick: false
+                        }).then((result) => {
+
+                            if (result.isConfirmed) {
+
+                                window.location.href = '@Url.Action("Login", "Account")';
+
+                            }
+
+                        });
+                    </text>
+        }
+
+
                                              function loadChestRFID(groupId) {
                         $.get('/RFID/GetChestRFIDByGroup', { groupId: groupId })
                             .done(function (data) {
