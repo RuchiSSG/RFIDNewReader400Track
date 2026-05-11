@@ -189,5 +189,6 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
-
+//app.Urls.Clear();
+//app.Urls.Add("http://0.0.0.0:5008");
 app.Run();
