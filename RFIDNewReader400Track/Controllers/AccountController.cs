@@ -85,12 +85,20 @@ public class AccountController : Controller
                         Response.Cookies.Append("IpAddress", model.IpAddress);
 
                         TempData["SuccessMessage"] = "Login successful! Welcome back.";
-                        return RedirectToAction("Configuration", "RFID", new { accessToken });
+
+                        return Json(new
+                        {
+                            success = true,
+                            redirectUrl = Url.Action("Configuration", "RFID", new { accessToken })
+                        });
                     }
                     else
                     {
-                        TempData["ErrorMessage"] = "Invalid username or password.";
-                        ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Invalid username or password."
+                        });
                     }
                 }
                 else
@@ -107,7 +115,11 @@ public class AccountController : Controller
         }
         else
         {
-            TempData["ErrorMessage"] = "Please fill in all required fields.";
+            return Json(new
+            {
+                success = false,
+                message = "Please fill in all required fields."
+            });
         }
         return View(model);
     }

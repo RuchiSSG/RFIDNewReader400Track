@@ -23,7 +23,49 @@
     }
 
 </style>
-<div class="d-flex justify-content-end mb-3">
+<style>
+    /* Loader Overlay */
+    #loaderOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8);
+        z-index: 99999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .loader-spinner {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #0d6efd;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+    }
+
+    .loader-text {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+<div class="d-flex justify-content-end mb-3 mt-3">
     <button id="resetButton" type="button" class="btn btn-warning me-2">Reset</button>
     <a href="@Url.Action("Login", "Account")" class="btn btn-outline-danger">Logout</a>
     <button type="button" class="btn btn-secondary" onclick="printPage()" style="margin-left: 10px">
@@ -32,6 +74,11 @@
 </div>
 
 <h2>RFID Reader Section</h2>
+<!-- Loader -->
+<div id="loaderOverlay">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Loading group data...</div>
+</div>
 <div class="alert alert-info">
     <strong>Notice:</strong> You have been redirected here because the IP Address is already registered!
 </div>
@@ -283,6 +330,31 @@
 
 @section Scripts {
     <script>
+                 // 🔥 Logout Loader
+        $('#logoutButton').click(function () {
+
+            showLoader("Logging out...");
+
+        });
+
+        // 🔥 Refresh / Reload Loader
+        $(window).on('beforeunload', function () {
+
+            showLoader("Refreshing page...");
+
+        });
+                function showLoader(message = "Please wait...") {
+
+            $('.loader-text').text(message);
+
+            $('#loaderOverlay').css({
+                'display': 'flex'
+            });
+        }
+         function hideLoader() {
+
+            $('#loaderOverlay').hide();
+        }
                       @if (ViewBag.ErrorMessage != null)
         {
                     <text>
@@ -320,6 +392,8 @@
 
 
                                              function loadChestRFID(groupId) {
+        // 🔥 SHOW LOADER
+        showLoader("Loading group data...");
                         $.get('/RFID/GetChestRFIDByGroup', { groupId: groupId })
                             .done(function (data) {
 
@@ -344,6 +418,8 @@
                         </tr>
                     `);
                 });
+                   // 🔥 HIDE LOADER
+           hideLoader();
                             })
                             .fail(function () {
                                 alert('Failed to load Chest RFID data');
@@ -811,13 +887,14 @@
                                         }
                                     }
         $('#startButton').click(function () {
-
+              showLoader("Starting race...");
             // 🔥 First Clear Backend Data
             $.post('@Url.Action("ClearData", "RFID")', function () {
 
                 // 🔥 Then Start Race
                 $.post('@Url.Action("StartRace", "RFID")', function () {
-
+            // ✅ HIDE LOADER
+            hideLoader();
                     isRunning = true;
 
                     $('#rfidDataBody').empty();
@@ -848,14 +925,14 @@
             }).then((result) => {
 
                 if (result.isConfirmed) {
-
+                     showLoader("Saving race data...");
                     $.ajax({
                         url: '@Url.Action("Stop", "RFID")',
                         type: 'POST',
                         success: function (response) {
 
                             if (response.success) {
-
+                                 hideLoader();
                                 toggleListenerState(false);
 
                                 // ✅ Final table render
@@ -869,6 +946,7 @@
                                 );
 
                             } else {
+                                 hideLoader();
                                 Swal.fire(
                                     'Error!',
                                     'Failed to save data.',
@@ -877,6 +955,7 @@
                             }
                         },
                         error: function () {
+                             hideLoader();  
                             Swal.fire(
                                 'Error!',
                                 'Server error while saving data.',
@@ -911,11 +990,39 @@
 
 
 
-                                    $('#clearButton').click(function () {
-                                        $('#rfidDataBody').empty().append('<tr><td colspan="2">No data available</td></tr>');
-                                        $('#debugInfo').text('RFID data cleared');
-                                        previousTagIds = [];
-                                    });
+
+
+                                          $('#clearButton').click(function () {
+
+            showLoader("Clearing data...");
+
+            setTimeout(function () {
+
+                $('#rfidDataBody').empty()
+                    .append('<tr><td colspan="4">No data available</td></tr>');
+
+                $('#chestTable tbody tr').each(function () {
+
+                    $(this).find('.lap-count')
+                        .removeClass('fw-bold')
+                        .addClass('text-muted')
+                        .text('0');
+
+                    $(this).find('.live-time')
+                        .removeClass('fw-bold text-success')
+                        .addClass('text-muted')
+                        .text('Waiting...');
+                });
+
+                $('#finalResultBody').empty()
+                    .append('<tr><td colspan="6">Data will appear here after Stop</td></tr>');
+
+                $('#debugInfo').text('All tables cleared successfully');
+
+                hideLoader();
+
+            }, 300);
+        });
 
                                     // if (isRunning) {
                                     //     toggleListenerState(true);
@@ -934,11 +1041,13 @@
                                             confirmButtonText: 'Yes, reset it!'
                                         }).then((result) => {
                                             if (result.isConfirmed) {
+                                                 showLoader("Resetting system...");
                                                 $.ajax({
                                                     url: '@Url.Action("Reset", "RFID")',
                                                     type: 'POST',
                                                     success: function (response) {
                                                           if (response.success) {
+                                                                hideLoader();
 
             Swal.fire(
                 'Reset!',
@@ -958,6 +1067,7 @@
                                                         }
                                                     },
                                                     error: function (xhr, status, error) {
+                                                          hideLoader();
                                                         console.error('Error occurred while resetting:', error);
                                                         $('#debugInfo').text('An error occurred while resetting.');
                                                         Swal.fire(

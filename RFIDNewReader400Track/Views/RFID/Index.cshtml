@@ -5,9 +5,67 @@
     var events = Model.Events;
     var ipAddress = string.Join(", ", Model.ReaderIPs);
 }
+<style>
+    .device-connected {
+        background-color: #d4edda !important;
+        border: 2px solid #28a745 !important;
+        color: #155724 !important;
+        font-weight: bold;
+    }
 
+    .device-disconnected {
+        background-color: #f8d7da !important;
+        border: 2px solid #dc3545 !important;
+        color: #721c24 !important;
+        font-weight: bold;
+    }
+    /* Loader Overlay */
+    #loaderOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8);
+        z-index: 9999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .loader-spinner {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #0d6efd;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loader-text {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+</style>
 <h2>RFID Reader Configuration</h2>
-
+<!-- Loader -->
+<div id="loaderOverlay">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Please wait...</div>
+</div>
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
     <div class="alert alert-warning" role="alert">
@@ -20,8 +78,14 @@
             <form id="eventForm" method="post" onsubmit="return SubmitButton(event);">
                 <div class="mb-3">
                     <label for="deviceName" class="form-label">Device Name:</label>
-                    <input type="text" id="deviceName" class="form-control" value="@(Model.ReaderIPs?.FirstOrDefault() ?? "")" readonly>
 
+                    <input type="text"
+                           id="deviceName"
+                           class="form-control"
+                           value="@(Model.ReaderIPs?.FirstOrDefault() ?? "")"
+                           readonly>
+
+                    <small id="connectionStatus" class="fw-bold"></small>
                 </div>
 
                 <div class="mb-3">
@@ -76,7 +140,285 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="text/javascript">
+                       $(document).ready(function () {
 
+            var deviceInput = $('#deviceName');
+            var statusText = $('#connectionStatus');
+
+            // Check if IP/device name exists
+            if (deviceInput.val().trim() !== "") {
+
+                // Green color for connected
+                deviceInput.addClass('device-connected');
+
+                // Show connected text
+                statusText
+                    .html('✅ Connected')
+                    .css('color', 'green');
+
+            } else {
+
+                // Red color for disconnected
+                deviceInput.addClass('device-disconnected');
+
+                // Show disconnected text with Help link
+                statusText
+                    .html(`
+                        ❌ Disconnected
+                        <a href="javascript:void(0);"
+                           id="helpLink"
+                           style="margin-left:10px; text-decoration:underline; color:#007bff;">
+                           Help
+                        </a>
+                    `)
+                    .css('color', 'red');
+            }
+
+            // Help click event
+            $(document).on('click', '#helpLink', function () {
+
+                        Swal.fire({
+            title: 'How to Connect RFID Reader',
+            width: '900px',
+        html: `
+        <div style="text-align:left; max-height:550px; overflow-y:auto; padding-right:10px; line-height:1.8;">
+
+            <h4 style="color:#0d6efd; margin-bottom:15px;">
+                RFID Reader Connection Setup Guide
+            </h4>
+
+            <ol>
+
+                <li>Ensure the RFID Reader device is powered ON.</li>
+
+                <li>Connect the RFID Reader and System to the same network.</li>
+
+                <li>Check LAN cable connection properly.</li>
+
+                <li>Verify the Reader IP Address configuration.</li>
+
+            </ol>
+
+            <hr/>
+
+            <h5 style="color:#198754;">
+                Step 1 : Configure System IP Address
+            </h5>
+
+            <ol>
+
+                <li>
+                    Open:
+                    <b>Control Panel → Network & Internet → Network Connections</b>
+                </li>
+
+                <li>
+                    Right-click on:
+                    <b>Ethernet</b>
+                    and click:
+                    <b>Properties</b>
+                </li>
+
+                <li>
+                    Select:
+                    <b>Internet Protocol Version 4 (TCP/IPv4)</b>
+                </li>
+
+                <li>
+                    Click:
+                    <b>Properties</b>
+                </li>
+
+                <li>
+                    Configure the system IP address according to RFID Reader network.
+                </li>
+
+                <li>
+                    Example:
+                    <br/>
+                   System IP:
+                    <b>192.168.0.XXX (192.168.0.226 or 192.168.0.225)</b>
+                    <br/>
+
+                </li>
+
+            </ol>
+
+            <div style="background:#fff3cd; padding:10px; border-radius:5px; margin-bottom:15px;">
+                  <b>Note:</b> The System IP Address and the Remote Host entered in RFID Reader configuration must be the same.
+            </div>
+
+            <!-- Screenshot 1 -->
+            <img src="/RFIDImages/ipsetincontrolpanel.png"
+                 alt="IP Configuration"
+                 style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+
+            <hr/>
+
+            <h5 style="color:#198754;">
+                Step 2 : Open RFID Reader in Browser
+            </h5>
+                    <div style="background:#fff3cd; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <b>Note:</b> RFID Reader power must be ON before opening the Reader IP Address in the browser.
+        </div>
+            <ol>
+
+                <li>
+                    Open browser:
+                    <b>Chrome / Edge</b>
+                </li>
+
+                <li>
+                    Enter Reader IP Address:
+                    <br/>
+                    <b>192.168.0.xxx (e.g. 192.168.0.131)</b>
+                </li>
+
+                <li>
+                    Login using:
+                    <br/>
+                    <b>Username:</b> admin
+                    <br/>
+                    <b>Password:</b> admin
+                </li>
+
+            </ol>
+
+            <!-- Screenshot 2 -->
+            <img src="/RFIDImages/Capture.png"
+                 alt="RFID Browser Login"
+                 style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+
+            <hr/>
+
+            <h5 style="color:#198754;">
+                Step 3 : Configure Serial Channel Settings
+            <hr/>
+            </h5>
+                <li>
+                    Go to:
+                    <b>Serial Channel Configuration</b>
+                </li>
+
+                   <img src="/RFIDImages/Capture2.png"
+                 alt="RFID Browser Login"
+                 style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+            <ol>
+
+
+                <li>
+                    Open:
+                    <b>Serial Channel List → Connection Setting</b>
+                        <img src="/RFIDImages/Capture3.png"
+                 alt="RFID Browser Login"
+                style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+                </li>
+
+                <li>
+                    Configure Endpoint Settings:
+                </li>
+
+            </ol>
+
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+
+                <b>Required Settings:</b>
+
+                <ul style="margin-top:10px;">
+
+                    <li>
+                        <b>Local Port:</b>
+                        Reader Port
+                    </li>
+
+                    <li>
+                        <b>Remote Port:</b>
+                        9090
+                    </li>
+
+                    <li>
+                        <b>Remote Host:</b>
+                        System IP Address
+                    </li>
+
+                </ul>
+
+            </div>
+
+            <!-- Screenshot 3 -->
+            <img src="/RFIDImages/browseripset.png"
+                 alt="Serial Channel Configuration"
+                style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+
+            <hr/>
+
+            <h5 style="color:#198754;">
+                Step 4 : Save and Restart
+            </h5>
+
+            <ol>
+
+                <li>
+                    Click:
+                    <b>Submit</b>
+                </li>
+
+                <li>
+                    Then click:
+                    <b>Apply / Restart</b>
+                </li>
+
+                <li>
+                    Wait for RFID Reader restart completion.
+                </li>
+
+            </ol>
+
+            <!-- Screenshot 4 -->
+            <img src="/RFIDImages/Capture5.png"
+                 alt="Apply Restart"
+                style="width:80%; display:block; margin:0 auto 20px; border:1px solid #ccc; border-radius:8px;" />
+
+            <hr/>
+
+            <h5 style="color:#198754;">
+                Step 5 : Verify Connection
+            </h5>
+
+            <ol>
+
+                <li>
+                    Refresh this page after restart.
+                </li>
+
+                <li>
+                    Device status should show:
+                    <span style="color:green; font-weight:bold;">
+                        Connected
+                    </span>
+                </li>
+
+                <li>
+                    If still disconnected:
+                    <ul>
+                        <li>Check IP Address</li>
+                        <li>Check the firewall (it should be turned off).</li>
+                        <li>Check LAN connection</li>
+                        <li>Restart Reader and System</li>
+                    </ul>
+                </li>
+
+            </ol>
+
+        </div>
+        `,
+            icon: 'info',
+            confirmButtonText: 'OK'
+        });
+
+            });
+
+        });
         // Configure toastr
         toastr.options = {
             "closeButton": true,
@@ -88,15 +430,16 @@
         // Show login success message if it exists
         @if (TempData["SuccessMessage"] != null)
         {
-                    <text>
-                        toastr.success('@TempData["SuccessMessage"]');
-                    </text>
+                            <text>
+                                toastr.success('@TempData["SuccessMessage"]');
+                            </text>
         }
 
             function SubmitButton(event) {
                 // Prevent the default form submission
                 event.preventDefault();
-
+                                   // SHOW LOADER
+        $('#loaderOverlay').css('display', 'flex');
                 // Get access token and input values
                 var accessToken = document.getElementById('access_token').value;
                 var deviceName = $('#deviceName').val();
@@ -132,6 +475,8 @@
                     },
                     success: function (response) {
                         if (response.success) {
+                                                            // Hide Loader
+          $('#loaderOverlay').hide();
                             // Show success message and redirect
                             Swal.fire({
                                 title: 'Success!',
@@ -140,6 +485,8 @@
                                 confirmButtonText: 'OK'
                             }).then((result) => {
                                 if (result.isConfirmed) {
+                // SHOW loader again during redirect
+                $('#loaderOverlay').css('display', 'flex');
                                    window.location.href = response.redirectUrl
         + '?eventId=' + encodeURIComponent(eventDropdown)
         + '&categoryId=' + encodeURIComponent(categoryDropdown);
@@ -157,6 +504,7 @@
                         }
                     },
                     error: function (xhr, status, error) {
+                        $('#loaderOverlay').hide();
                         // Enhanced error handling
                         let errorMessage = 'Error inserting data. Please try again.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
