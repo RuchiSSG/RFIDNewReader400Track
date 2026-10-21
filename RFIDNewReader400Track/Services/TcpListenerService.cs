@@ -31,6 +31,12 @@ namespace RFIDReaderPortal.Services
         private string _eventId;
         private string _sessionid;
         private string _ipaddress;
+        private string _categoryId;
+        private string _categoryName;
+
+        // Allowed tags (group / chest mapping)
+        private readonly ConcurrentDictionary<string, bool> _allowedTags = new();
+        private bool _isTagFilterActive = false;
 
         private DateTime _lastClearTime = DateTime.MinValue;
         private readonly IApiService _apiService;
@@ -67,7 +73,7 @@ namespace RFIDReaderPortal.Services
 
         public void SetParameters(string accessToken, string userid, string recruitid,
                                   string deviceId, string location, string eventName, string eventId,
-                                  string ipaddress, string sessionid)
+                                  string ipaddress, string sessionid, string categoryId, string categoryName)
         {
             _accessToken = accessToken;
             _userid = userid;
@@ -78,7 +84,22 @@ namespace RFIDReaderPortal.Services
             _eventName = eventName;
             _sessionid = sessionid;
             _ipaddress = ipaddress;
+            _categoryId = categoryId;
+            _categoryName = categoryName;
             IsRunning = false;
+        }
+
+        public void SetAllowedTags(IEnumerable<string> tagIds, bool isActive = false)
+        {
+            _allowedTags.Clear();
+            foreach (var tag in tagIds)
+                _allowedTags[tag.ToUpperInvariant()] = true;
+
+            _isTagFilterActive = isActive;
+
+            _receivedDataDict.Clear();
+            _lastProcessed.Clear();
+            _lastSeenScan.Clear();
         }
 
         public void Start()
@@ -513,6 +534,13 @@ namespace RFIDReaderPortal.Services
             if (!_raceStarted)
                 return;
 
+            // 🔒 Ignore tags that are not in the allowed group / chest mapping
+            if (_isTagFilterActive && !_allowedTags.IsEmpty && !_allowedTags.ContainsKey(epc))
+            {
+                _logger.LogDebug($"Ignored unknown tag: {epc}");
+                return;
+            }
+
             // 🔒 HARD reader noise filter (same tag rapid hits)
             var last = _lastSeenScan.GetOrAdd(epc, DateTime.MinValue);
             if (timestamp - last < TimeSpan.FromMilliseconds(800))
@@ -686,7 +714,9 @@ namespace RFIDReaderPortal.Services
                 _eventId,
                 dataToInsert,
                 _sessionid,
-                _ipaddress
+                _ipaddress,
+                _categoryId,
+                _categoryName
             );
 
             return result ?? new List<RFIDChestNoMappingDto>();
