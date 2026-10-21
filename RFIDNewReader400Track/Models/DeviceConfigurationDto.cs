@@ -11,10 +11,13 @@ namespace RFIDReaderPortal.Models
         public string? RecruitId { get; set; }
         public string? EventId { get; set; }
 
-       // public string? eventName { get; set; }
-
+        // public string? eventName { get; set; }
+        public string? UserName { get; set; }
+        public string? Post { get; set; }
+        public string? Place { get; set; }
+        public string? Year { get; set; }
         public string? eventName { get; set; }
-
+        public string? categoryName { get; set; }
         public string? categoryId { get; set; }
 
         public string? UserId { get; set; }

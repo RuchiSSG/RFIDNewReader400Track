@@ -10,6 +10,13 @@ namespace RFIDReaderPortal.Services
     {
         public async Task<(List<string> IpAddresses, string StatusMessage)> DiscoverRFIDReadersAsync()
         {
+            //          return (
+            //    new List<string>
+            //    {
+            //                                        "192.168.0.227"   // 👉 yaha apna RFID reader IP dalo
+            //    },
+            //    "Manual IP set for testing"
+            //);
             var ipAddresses = new List<string>();
             string statusMessage = "";
 
