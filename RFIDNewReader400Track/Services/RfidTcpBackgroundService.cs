@@ -89,8 +89,8 @@ public class RfidTcpBackgroundService : BackgroundService
     //}
     private static List<string> ExtractEpcs(string hex)
     {
-        const int EPC_LEN = 24; // 12 bytes
-        const string EPC_PREFIX = "E280117000000212AC9";
+        const int EPC_LEN = 24;        // 12 bytes = 24 hex chars
+        const string EPC_PREFIX = "E2"; // Gen2 EPCs start with E2 (dynamic - no fixed tag pattern). Use "" to accept any 24 hex chars
 
         HashSet<string> result = new();
 
@@ -104,7 +104,7 @@ public class RfidTcpBackgroundService : BackgroundService
             string candidate = hex.Substring(i, EPC_LEN);
 
             if (
-                candidate.StartsWith(EPC_PREFIX) &&
+                candidate.StartsWith(EPC_PREFIX, StringComparison.Ordinal) &&
                 candidate.All(c => "0123456789ABCDEF".Contains(c))
             )
             {

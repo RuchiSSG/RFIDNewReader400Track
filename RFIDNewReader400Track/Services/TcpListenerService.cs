@@ -48,6 +48,10 @@ namespace RFIDReaderPortal.Services
         private readonly List<RfidData> _storedRfidData = new List<RfidData>();
         private List<RfidData> _snapshotData = new List<RfidData>();
 
+        // EPC settings (dynamic - no hardcoded tag pattern)
+        private const int EPC_LEN = 24;            // 12 bytes = 24 hex chars
+        private const string EPC_PREFIX = "E2";    // Gen2 EPCs start with E2. Use "" to accept any 24 hex chars
+
         // Buffer to accumulate incomplete hex data
         private StringBuilder _hexBuffer = new StringBuilder();
 
@@ -285,27 +289,68 @@ namespace RFIDReaderPortal.Services
         //}
         private void ProcessHexBuffer(StringBuilder buffer)
         {
-            if (buffer.Length < 24)
+            if (buffer.Length < EPC_LEN)
                 return;
 
             string hex = buffer.ToString();
 
-            var matches = Regex.Matches(
-                hex,
-                @"E2801170000002[0-9A-F]{10}",
-                RegexOptions.IgnoreCase
-            );
+            // Dynamic EPC detection (no hardcoded tag pattern)
+            var epcs = FindEpcs(hex);
 
             var now = DateTime.Now;
 
-            foreach (Match m in matches)
+            foreach (var epc in epcs)
             {
-                _epcQueue.Enqueue((m.Value.ToUpperInvariant(), now));
+                _epcQueue.Enqueue((epc, now));
             }
 
             // 🔒 KEEP LAST 48 CHARS ONLY (important for split EPC)
             if (buffer.Length > 48)
                 buffer.Remove(0, buffer.Length - 48);
+        }
+
+        /// <summary>
+        /// Slides byte by byte (2 hex chars) over the hex string and returns every
+        /// 24-char EPC that is valid hex and starts with EPC_PREFIX.
+        /// No tag-specific pattern is hardcoded.
+        /// </summary>
+        private static List<string> FindEpcs(string hex)
+        {
+            var result = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(hex) || hex.Length < EPC_LEN)
+                return result;
+
+            hex = hex.ToUpperInvariant();
+
+            int i = 0;
+            while (i <= hex.Length - EPC_LEN)
+            {
+                string candidate = hex.Substring(i, EPC_LEN);
+
+                if ((EPC_PREFIX.Length == 0 || candidate.StartsWith(EPC_PREFIX, StringComparison.Ordinal))
+                    && IsHex(candidate))
+                {
+                    result.Add(candidate);
+                    i += EPC_LEN;   // jump past this EPC
+                }
+                else
+                {
+                    i += 2;         // move one byte
+                }
+            }
+
+            return result;
+        }
+
+        private static bool IsHex(string s)
+        {
+            foreach (char c in s)
+            {
+                if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
+                    return false;
+            }
+            return true;
         }
 
 
@@ -549,14 +594,8 @@ namespace RFIDReaderPortal.Services
             if (string.IsNullOrWhiteSpace(hex))
                 return new List<string>();
 
-            var matches = Regex.Matches(
-                hex,
-                 @"E2801170000002[0-9A-F]{10}",
-                RegexOptions.IgnoreCase
-            );
-
-            return matches
-                .Select(m => m.Value.ToUpperInvariant())
+            // Dynamic EPC detection (no hardcoded tag pattern)
+            return FindEpcs(hex)
                 .Distinct()
                 .ToList();
         }
